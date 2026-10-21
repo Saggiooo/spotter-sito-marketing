@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Palestra</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen" data-status="light">
+      <div class="compact-bar" id="compact">
+        <a href="index.html" class="icon-btn" data-ui="back"></a>
+        <h4 class="display" id="cName"></h4>
+        <button class="icon-btn fav-btn" data-ui="heart"></button>
+      </div>
+
+      <div class="scroll" id="scroll">
+        <div class="hero">
+          <div class="gallery" id="gallery"></div>
+          <div class="hero-top">
+            <a href="index.html" class="icon-btn glass" data-ui="back" aria-label="Indietro"></a>
+            <span class="sp"></span>
+            <button class="icon-btn glass" data-ui="share" id="share" aria-label="Condividi"></button>
+            <button class="icon-btn glass fav-btn" data-ui="heart" aria-label="Salva"></button>
+          </div>
+          <div class="hero-bottom">
+            <div class="dots" id="dots"></div>
+            <span class="counter glass" id="counter"></span>
+          </div>
+        </div>
+
+        <div class="gym-body" id="body"></div>
+      </div>
+
+      <div class="buy-bar" id="buy"></div>
+    </div>
+  </div>
+
+  <script src="../assets/vendor/leaflet/leaflet.js"></script>
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    mountShell('palestra.html');
+    const id = new URLSearchParams(location.search).get('id');
+    const mine = id === 'mine' ? getMyGym() : null;
+    const g = mine || GYMS.find(x => x.id === id) || GYMS[0];
+    const noReviews = !g.reviews;
+    document.title = `Spotter — ${g.name}`;
+    const st = openStatus(g);
+    const km = fmtKm(distKm(g.lat, g.lng));
+    const AV_COLORS = [['#D8FF3C', '#121211'], ['#121211', '#D8FF3C'], ['#E6E1D5', '#121211'], ['#2B2A27', '#FBF9F4']];
+
+    /* ---------- gallery ---------- */
+    $('#gallery').innerHTML = g.photos.map((p, i) => `<img src="${photo(p, 900)}" alt="" ${i ? 'loading="lazy"' : ''}>`).join('');
+    $('#dots').innerHTML = g.photos.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('');
+    const setCounter = i => {
+      $('#counter').textContent = `${i + 1} / ${g.photos.length}`;
+      $$('#dots i').forEach((d, j) => d.classList.toggle('on', i === j));
+    };
+    setCounter(0);
+    $('#gallery').addEventListener('scroll', e => setCounter(Math.round(e.target.scrollLeft / e.target.clientWidth)));
+
+    /* ---------- body ---------- */
+    const byCat = {};
+    g.equipment.forEach(e => (byCat[EQUIP[e[0]].cat] ||= []).push(e));
+    const reviews = gymReviews(g);
+    const bd = ratingBreakdown(g);
+    const monthly = g.plans.find(p => p.period === 'mese');
+
+    const perMonth = p => p.period === '3 mesi' ? p.price / 3 : p.period === 'anno' ? p.price / 12 : null;
+
+    $('#body').innerHTML = `
+      <div class="gym-head">
+        <div class="gym-kicker mono">
+          ${g.featured ? `<span class="tag tag-ink">${ui('bolt', 11)}In evidenza</span>` : ''}
+          <span>${g.type} · ${g.area}</span>
+        </div>
+        <h1 class="gym-name display">${g.name}${g.verified ? `<span class="vf" title="Verificata">${ui('check', 15)}</span>` : ''}</h1>
+        <div class="gym-meta">
+          ${noReviews ? '<span class="tag tag-volt">Nuova su Spotter</span>' : `${starsHtml(g.rating, 15)} <span>${g.rating.toFixed(1).replace('.', ',')}</span>
+          <span class="muted">${g.reviews} recensioni</span>`}<span class="sep"></span>
+          <span class="muted">${km}</span>
+        </div>
+        <div class="gym-open"><span class="status-dot ${st.open ? (st.soon ? 'soon' : '') : 'off'}"></span>${st.label}</div>
+        <p class="gym-desc">${g.desc}</p>
+      </div>
+
+      <div class="actions" style="grid-template-columns:repeat(${1 + !!g.phone + !!g.whatsapp + !!g.site}, 1fr)">
+        <a class="act primary" href="${mapsUrl(g)}" target="_blank" rel="noopener">${ui('nav', 22)}Indicazioni</a>
+        ${g.phone ? `<a class="act" href="tel:${g.phone.replace(/\s/g, '')}">${ui('phone', 22)}Chiama</a>` : ''}
+        ${g.whatsapp ? `<a class="act" href="https://wa.me/${g.whatsapp.replace(/\D/g, '')}" target="_blank" rel="noopener">${ui('whatsapp', 22)}WhatsApp</a>` : ''}
+        ${g.site ? `<a class="act" href="https://${g.site}" target="_blank" rel="noopener">${ui('globe', 22)}Sito</a>` : ''}
+      </div>
+
+      ${g.trial ? `
+      <button class="trial" id="trialBtn" style="width:calc(100% - 40px);text-align:left">
+        <span class="t-ic">${ui('ticket', 22)}</span><span class="t-perf"></span>
+        <span class="tt"><b>${g.trial}</b><small>Prenota in 30 secondi, nessuna carta richiesta</small></span>
+        <span class="go">${ui('arrow', 18)}</span>
+      </button>` : `<div class="no-trial">${ui('ticket', 18)} Questa palestra non offre prove gratuite.</div>`}
+
+      <nav class="gtabs" id="gtabs">
+        <button data-t="attrezzi" class="on">Attrezzi<sup>${g.equipment.length}</sup></button>
+        <button data-t="prezzi">Prezzi</button>
+        <button data-t="recensioni">Recensioni</button>
+        <button data-t="info">Info</button>
+      </nav>
+
+      <!-- ATTREZZI -->
+      <section class="gsec" id="attrezzi">
+        <div class="gsec-h"><h2 class="display">Attrezzi</h2><span class="mono">aggiornato<br>sett. 2026</span></div>
+        <div class="cat-tabs hscroll" id="eqTabs"></div>
+        <div class="eq-list" id="eqList"></div>
+      </section>
+
+      <!-- PREZZI -->
+      <section class="gsec" id="prezzi">
+        <div class="gsec-h"><h2 class="display">Abbonamenti</h2><span class="mono">IVA inclusa</span></div>
+        <div class="plans">
+          ${g.plans.map(p => {
+            const pm = perMonth(p);
+            const save = pm && monthly ? Math.round((1 - pm / monthly.price) * 100) : 0;
+            return `
+            <div class="plan ${p.best ? 'best' : ''}">
+              ${p.best ? `<span class="tag tag-volt best-tag">${ui('bolt', 11)}Più conveniente</span>` : ''}
+              <div><h3>${p.name}${save > 0 ? `<span class="save">−${save}%</span>` : ''}</h3><span class="per">per ${p.period}</span></div>
+              <div class="price">€${p.price}${pm ? `<small>€${pm.toFixed(0)}/mese</small>` : ''}</div>
+              ${p.perks ? `<ul>${p.perks.map(k => `<li>${ui('check', 14)}${k}</li>`).join('')}</ul>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        <p class="fineprint">${ui('ticket', 15)} ${g.signup ? `Quota d'iscrizione una tantum €${g.signup}` : 'Nessuna quota d\'iscrizione'}</p>
+      </section>
+
+      <!-- RECENSIONI -->
+      <section class="gsec" id="recensioni">
+        <div class="gsec-h"><h2 class="display">Recensioni</h2><button class="tag tag-soft" id="writeRv" style="height:30px;padding:0 10px">${ui('pen', 14)} Scrivi</button></div>
+        ${noReviews ? `<div class="no-trial" style="margin:0">${ui('starO', 18)} Ancora nessuna recensione. Sii il primo a scriverne una.</div>` : `
+        <div class="rv-top">
+          <div class="rv-score">
+            <div class="big">${g.rating.toFixed(1).replace('.', ',')}</div>
+            <div style="margin-top:6px">${starsHtml(g.rating, 12)}</div>
+            <span class="mono">${g.reviews} voti</span>
+          </div>
+          <div class="bars">${bd.map((v, i) => `<div class="bar-row"><span>${5 - i}</span><span class="b"><i data-w="${v}"></i></span></div>`).join('')}</div>
+        </div>
+        <div class="subr">${subRatings(g).map(([l, v]) => `<div><span>${l}</span><span class="v"><i style="--w:${(v / 5) * 100}%"></i>${v.toFixed(1).replace('.', ',')}</span></div>`).join('')}</div>
+        ${reviews.map((r, i) => `
+          <article class="rv">
+            <div class="rv-h">
+              <span class="av" style="background:${AV_COLORS[i % 4][0]};color:${AV_COLORS[i % 4][1]}">${initials(r.who)}</span>
+              <span class="tt"><b>${r.who}</b><small>${r.when}</small></span>
+              ${starsHtml(r.stars, 12)}
+            </div>
+            <p>${r.text}</p>
+            ${r.tags.length ? `<div class="tags">${r.tags.map(t => `<span class="tag tag-soft">${t}</span>`).join('')}</div>` : ''}
+            ${i === 0 && g.verified ? `<div class="reply"><b>${ui('shield', 14)} Risposta di ${g.name}</b>Grazie mille! Ci vediamo in sala 💪</div>` : ''}
+          </article>`).join('')}
+        <button class="btn btn-ghost btn-block" style="margin-top:16px">Vedi tutte le ${g.reviews} recensioni</button>`}
+      </section>
+
+      <!-- INFO -->
+      <section class="gsec" id="info">
+        <div class="gsec-h"><h2 class="display">Info</h2></div>
+        <div class="hours">
+          ${g.hours === '24h'
+            ? `<div class="today"><span>Tutti i giorni</span><span>24 ore su 24</span></div>`
+            : [['Lunedì – Venerdì', g.hours.wk, [1, 2, 3, 4, 5]], ['Sabato', g.hours.sat, [6]], ['Domenica', g.hours.sun, [0]]]
+              .map(([l, h, days]) => `<div class="${days.includes(new Date().getDay()) ? 'today' : ''} ${h ? '' : 'closed'}"><span>${l}</span><span>${h ? h.join(' – ') : 'Chiuso'}</span></div>`).join('')}
+        </div>
+
+        <div class="am-grid">
+          ${g.gender && g.gender !== 'mista' ? `<div class="am-item" style="grid-column:1/-1;background:var(--ink);color:var(--paper)"><span style="color:var(--volt)">${ui('venus', 22)}</span>${GENDER[g.gender]}</div>` : ''}
+          ${g.amenities.map(a => `<div class="am-item">${amIcon(a, 24)}${AMENITIES[a]}</div>`).join('')}
+        </div>
+
+        <div class="mini-map-wrap">
+          <div id="miniMap"></div>
+          <div class="addr">
+            <span class="tt"><b>${g.address}</b><small>${km} da te · ${g.area}</small></span>
+            <a class="btn btn-ink" style="height:42px;padding:0 14px;font-size:14px" href="${mapsUrl(g)}" target="_blank" rel="noopener">${ui('nav', 16)} Maps</a>
+          </div>
+        </div>
+      </section>
+
+      ${mine ? `<a class="claim" href="gestione.html">${ui('edit', 24)}<span class="tt"><b>Questa è la tua anteprima</b><small>Torna alla gestione per modificare la scheda.</small></span>${ui('arrow', 18)}</a>` : `
+      <a class="claim" href="rivendica.html?id=${g.id}">
+        ${ui('store', 24)}
+        <span class="tt"><b>Sei il titolare?</b><small>Rivendica la pagina, aggiorna attrezzi e prezzi.</small></span>
+        ${ui('arrow', 18)}
+      </a>`}`;
+
+    // icone data-ui
+    $$('[data-ui]').forEach(el => el.innerHTML = ui(el.dataset.ui, 20));
+    $('#cName').textContent = g.name;
+
+    /* ---------- attrezzi ---------- */
+    let eqCat = 'tutti';
+    function renderEq() {
+      const cats = [['tutti', 'Tutti', g.equipment.length], ...Object.entries(EQUIP_CATS).filter(([k]) => byCat[k]).map(([k, l]) => [k, l, byCat[k].length])];
+      $('#eqTabs').innerHTML = cats.map(([k, l, n]) => `<button class="${eqCat === k ? 'on' : ''}" data-k="${k}">${l} <span class="mono" style="font-size:9px;opacity:.6">${n}</span></button>`).join('');
+      $$('#eqTabs button').forEach(b => b.onclick = () => { eqCat = b.dataset.k; renderEq(); });
+      const items = eqCat === 'tutti' ? g.equipment : byCat[eqCat];
+      $('#eqList').innerHTML = items.map((e, i) => {
+        const [id, n, brand] = e;
+        const range = eqRange(e);
+        return `
+        <div class="eq-tile" style="--d:${i * .025}s">
+          <span class="qty">${n}</span>
+          <span class="eq-ic">${eqIcon(id, 34)}</span>
+          <b>${EQUIP[id].name}</b>
+          ${range ? `<span class="kg-range">${range}</span>` : ''}
+          ${brand ? `<span class="brand">${brand}</span>` : ''}
+        </div>`;
+      }).join('');
+    }
+    renderEq();
+
+    /* ---------- tabs + scrollspy + compact bar ---------- */
+    const scroller = $('#scroll');
+    $$('#gtabs button').forEach(b => b.onclick = () => {
+      const sec = $('#' + b.dataset.t);
+      scroller.scrollTo({ top: sec.offsetTop + $('#body').offsetTop - 168, behavior: 'smooth' });
+    });
+    let barsDone = false;
+    scroller.addEventListener('scroll', () => {
+      const y = scroller.scrollTop;
+      const show = y > 300;
+      $('#compact').classList.toggle('show', show);
+      $('.statusbar').classList.toggle('light', !show);
+      let cur = 'attrezzi';
+      ['attrezzi', 'prezzi', 'recensioni', 'info'].forEach(s => {
+        if ($('#' + s).offsetTop + $('#body').offsetTop - 200 <= y) cur = s;
+      });
+      $$('#gtabs button').forEach(b => b.classList.toggle('on', b.dataset.t === cur));
+      if (!barsDone && cur !== 'attrezzi') {
+        barsDone = true;
+        $$('.bar-row i').forEach(i => i.style.width = i.dataset.w + '%');
+      }
+    });
+
+    /* ---------- preferiti ---------- */
+    const syncFav = () => $$('.fav-btn').forEach(b => b.classList.toggle('fav-on', getFavs().includes(g.id)));
+    syncFav();
+    $$('.fav-btn').forEach(b => b.onclick = () => { const on = toggleFav(g.id); syncFav(); toast(on ? 'Salvata nei preferiti' : 'Rimossa dai preferiti'); });
+    $('#share').onclick = () => toast('Link copiato');
+
+    /* ---------- buy bar ---------- */
+    $('#buy').innerHTML = `
+      <div class="price"><span class="from">abbonamento da</span>€${g.price}<small> /mese</small></div>
+      ${g.trial
+        ? `<button class="btn btn-volt" id="buyBtn">${ui('ticket', 18)} Prova gratis</button>`
+        : `<button class="btn btn-ink" id="buyBtn">${ui('chat', 18)} Contatta</button>`}`;
+
+    /* ---------- sheets ---------- */
+    function contactSheet() {
+      openSheet(`
+        <h3 class="display">Contatta</h3>
+        <p class="sub">${g.name} risponde in media entro 2 ore.</p>
+        ${g.whatsapp ? `<a class="ct-row" href="https://wa.me/${g.whatsapp.replace(/\D/g, '')}" target="_blank" rel="noopener"><span class="ci" style="background:#D8FF3C">${ui('whatsapp', 22)}</span><span class="tt"><b>WhatsApp</b><small>${g.whatsapp}</small></span>${ui('arrowUR', 18, 'arr')}</a>` : ''}
+        ${g.phone ? `<a class="ct-row" href="tel:${g.phone.replace(/\s/g, '')}"><span class="ci">${ui('phone', 22)}</span><span class="tt"><b>Chiama</b><small>${g.phone}</small></span>${ui('arrowUR', 18, 'arr')}</a>` : ''}
+        ${g.email || g.site ? `<a class="ct-row" href="mailto:${g.email || 'info@' + g.site}"><span class="ci">${ui('mail', 22)}</span><span class="tt"><b>Email</b><small>${g.email || 'info@' + g.site}</small></span>${ui('arrowUR', 18, 'arr')}</a>` : ''}
+        <a class="ct-row" href="${mapsUrl(g)}" target="_blank" rel="noopener"><span class="ci">${ui('nav', 22)}</span><span class="tt"><b>Indicazioni</b><small>Apri in Google Maps</small></span>${ui('arrowUR', 18, 'arr')}</a>
+      `);
+    }
+
+    function trialSheet() {
+      const days = [];
+      const d0 = new Date();
+      const DN = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+      for (let i = 0; i < 7; i++) { const d = new Date(d0); d.setDate(d0.getDate() + i); days.push(d); }
+      const slots = ['07:00', '09:00', '12:30', '14:00', '17:00', '18:30', '19:30', '21:00'];
+      const w = openSheet(`
+        <h3 class="display">${g.trial}</h3>
+        <p class="sub">Scegli quando passare. Ti confermiamo via WhatsApp.</p>
+        <span class="label mono">Giorno</span>
+        <div class="days hscroll">${days.map((d, i) => `<button class="day ${i === 1 ? 'on' : ''}"><small>${i === 0 ? 'Oggi' : DN[d.getDay()]}</small><b>${d.getDate()}</b></button>`).join('')}</div>
+        <span class="label mono">Orario</span>
+        <div class="slots">${slots.map((s, i) => `<button class="slot ${i === 5 ? 'on' : ''}" ${i === 2 ? 'disabled' : ''}>${s}</button>`).join('')}</div>
+        <button class="btn btn-ink btn-block" id="confirmTrial">${ui('check', 18)} Conferma prova</button>
+      `);
+      $$('.day', w).forEach(b => b.onclick = () => { $$('.day', w).forEach(x => x.classList.remove('on')); b.classList.add('on'); });
+      $$('.slot:not([disabled])', w).forEach(b => b.onclick = () => { $$('.slot', w).forEach(x => x.classList.remove('on')); b.classList.add('on'); });
+      $('#confirmTrial', w).onclick = () => {
+        if (!getSession()) { closeSheet(); setTimeout(() => toast('Accedi per prenotare'), 300); setTimeout(() => location.href = 'account.html', 1100); return; }
+        const dIdx = $$('.day', w).findIndex(x => x.classList.contains('on'));
+        const d = days[dIdx];
+        const bk = store('spotter_bookings') || [];
+        bk.push({ gym: g.id, day: `${dIdx === 0 ? 'Oggi' : DN[d.getDay()]} ${d.getDate()}`, slot: $('.slot.on', w).textContent });
+        store('spotter_bookings', bk);
+        closeSheet(); setTimeout(() => toast('Prova prenotata! La trovi nel profilo'), 300);
+      };
+    }
+
+    function reviewSheet() {
+      const w = openSheet(`
+        <h3 class="display">La tua recensione</h3>
+        <p class="sub">Com'è stata la tua esperienza da ${g.name}?</p>
+        <div class="rate-pick">${[1, 2, 3, 4, 5].map(n => `<button data-n="${n}">${ui('star', 40)}</button>`).join('')}</div>
+        <span class="label mono">Cosa ti è piaciuto?</span>
+        <div class="chips-wrap" style="margin-bottom:16px">${['Attrezzatura', 'Pulizia', 'Staff', 'Prezzo', 'Corsi', 'Poco affollata'].map(t => `<button class="chip">${t}</button>`).join('')}</div>
+        <textarea class="field" placeholder="Racconta la tua esperienza…"></textarea>
+        <button class="btn btn-ink btn-block" id="pubRv">Pubblica</button>
+      `);
+      $$('.rate-pick button', w).forEach(b => b.onclick = () => $$('.rate-pick button', w).forEach(x => x.classList.toggle('on', +x.dataset.n <= +b.dataset.n)));
+      $$('.chips-wrap .chip', w).forEach(c => c.onclick = () => c.classList.toggle('on'));
+      $('#pubRv', w).onclick = () => { closeSheet(); setTimeout(() => toast('Recensione pubblicata'), 300); };
+    }
+
+    $('#buyBtn').onclick = g.trial ? trialSheet : contactSheet;
+    if ($('#trialBtn')) $('#trialBtn').onclick = trialSheet;
+    $('#writeRv').onclick = reviewSheet;
+    $$('.plan').forEach(p => p.onclick = contactSheet);
+
+    /* ---------- mini mappa ---------- */
+    const mm = L.map('miniMap', { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, keyboard: false })
+      .setView([g.lat + 0.0012, g.lng], 15);
+    addTiles(mm);
+    L.marker([g.lat, g.lng], { icon: L.divIcon({ className: 'pin-wrap', html: `<div class="pin is-active">${ui('bolt', 13)}${g.name.split(' ')[0]}</div>`, iconSize: [0, 0] }) }).addTo(mm);
+  </script>
+</body>
+</html>

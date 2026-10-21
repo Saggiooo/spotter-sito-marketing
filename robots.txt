@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /anteprima/
+Disallow: /api/
+Disallow: /storage/
+
+Sitemap: https://gymspotter.it/sitemap.xml

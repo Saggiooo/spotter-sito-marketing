@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — La mia palestra</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen" data-status="light">
+      <div class="scroll" id="root"></div>
+      <nav id="tabbar"></nav>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    const ses = getSession();
+    const g = getMyGym();
+    if (!ses) location.replace('account.html');
+    else if (ses.role !== 'gym') location.replace('profilo.html');
+    else render();
+
+    function render() {
+      mountShell('account.html');
+      const root = $('#root');
+
+      // nessuna palestra ancora collegata
+      if (!g) {
+        $('.screen').dataset.status = '';
+        $('.statusbar').classList.remove('light');
+        root.innerHTML = `
+          <div class="prof-head"><span class="prof-av gym">${initials(ses.name)}</span><div><h1 class="display">${ses.name}</h1><small>Account palestra · ${ses.email || ''}</small></div></div>
+          <div class="sec stack">
+            <div class="notfound" style="text-align:left;background:var(--paper);border-style:solid;border-color:var(--line)">
+              <b style="font-size:17px">Collega la tua palestra</b>
+              <p>Cercala sulla mappa per rivendicarla, oppure inseriscila da zero.</p>
+              <a class="btn btn-ink btn-block" href="palestra-nuova.html">${ui('search', 18)} Cerca o aggiungi</a>
+            </div>
+          </div>
+          ${accountMenu()}`;
+        $('#out').onclick = logout;
+        return;
+      }
+
+      const st = g._status || 'bozza';
+      const STB = { attiva: ['Online', 'ok'], verifica: [g._claim ? 'Rivendicazione in verifica' : 'In verifica', 'wait'], bozza: ['Bozza', ''], sospesa: ['Sospesa', 'wait'] }[st];
+      const active = st === 'attiva';
+      const PL = { base: 'Base', pro: 'Pro', boost: 'Boost' }[g._plan || 'base'];
+
+      // completezza sezioni → link alla procedura in modalità modifica
+      const rows = [
+        [1, 'Info e tipo', g.name ? `${g.type}${g.desc ? '' : ' · manca descrizione'}` : 'Da completare', !!(g.name && g.desc)],
+        [2, 'Posizione', g.address || 'Manca indirizzo', !!g.address],
+        [3, 'Contatti', [g.phone && 'Chiama', g.whatsapp && 'WhatsApp', g.site && 'Sito'].filter(Boolean).join(' · ') || 'Nessun contatto', !!(g.phone || g.whatsapp || g.site)],
+        [4, 'Orari e accesso', `${g.hours === '24h' ? '24/7' : 'Orari impostati'} · ${g.trial || 'nessuna prova'}`, true],
+        [5, 'Attrezzi', `${g.equipment.length} tipi · ${g.equipment.reduce((s, e) => s + e[1], 0)} pezzi`, g.equipment.length >= 3],
+        [6, 'Servizi', `${g.amenities.length} servizi`, g.amenities.length > 0],
+        [7, 'Prezzi', g.price ? `da €${g.price}/mese` : 'Nessun prezzo', !!g.price],
+        [8, 'Foto', `${g.photos.length} foto`, g.photos.length >= 3],
+      ];
+      const pct = Math.round(rows.filter(r => r[3]).length / rows.length * 100);
+
+      root.innerHTML = `
+        <div class="g-hero">
+          ${g.photos.length ? `<img src="${photo(g.photos[0], 800)}" alt="">` : `<span class="g-empty">${ui('image', 40)}</span>`}
+          <div class="g-t">
+            <div class="g-badges"><span class="st-badge ${STB[1]}">${STB[0]}</span><span class="st-badge plan">${g._plan === 'boost' ? ui('bolt', 11) : ''}${PL}</span></div>
+            <h1 class="display">${g.name || 'La mia palestra'}</h1>
+          </div>
+        </div>
+
+        ${st === 'bozza' ? `
+        <div class="sec"><div class="verify-card"><h3>Scheda non ancora inviata</h3><p>Completa i passaggi mancanti e inviala per la verifica: dopo sarà visibile sulla mappa.</p>
+          <a class="btn btn-ink btn-block" href="palestra-nuova.html">Continua la registrazione ${ui('arrow', 18)}</a></div></div>` : ''}
+
+        ${st === 'verifica' ? `
+        <div class="sec"><div class="verify-card">
+          <h3>${g._claim ? 'Stiamo verificando la rivendicazione' : 'Stiamo verificando la tua palestra'}</h3>
+          <p>Di solito meno di 48 ore. Nel frattempo puoi già sistemare la scheda.</p>
+          <div class="timeline">
+            <div class="tl ok"><i>${ui('check', 14)}</i><span><b>Richiesta inviata</b><small>Oggi</small></span></div>
+            <div class="tl now"><i></i><span><b>Controllo dello staff</b><small>Indirizzo e titolarità</small></span></div>
+            <div class="tl"><i></i><span><b>Online sulla mappa</b><small>Ti avvisiamo via email</small></span></div>
+          </div></div></div>` : ''}
+
+        <div class="sec">
+          <div class="sec-h"><h2 class="display">Ultimi 30 giorni</h2><span class="mono">${active ? 'statistiche' : 'dopo la verifica'}</span></div>
+          <div class="kpi-g">
+            ${[['eye', 'Visite pagina', active ? '4.612' : '—', '+18%', 'ink'], ['phone', 'Chiamate', active ? '86' : '—', '+9%'], ['nav', 'Indicazioni', active ? '312' : '—', '+22%'], ['ticket', 'Richieste prova', active ? '24' : '—', '+4']]
+              .map(([i, l, v, d, c]) => `<div class="${c || ''}"><span>${ui(i, 15)}${l}</span><b>${v}</b>${active ? `<span class="d">${d}</span>` : ''}</div>`).join('')}
+          </div>
+        </div>
+
+        ${active ? `
+        <div class="sec">
+          <div class="sec-h"><h2 class="display">Richieste di prova</h2><span class="mono" id="reqN">3 nuove</span></div>
+          <div class="card-box" id="reqs">
+            ${[['Giulia R.', 'Domani · 18:30'], ['Luca P.', 'Mer 7 · 07:00'], ['Sara B.', 'Gio 8 · 19:30']].map(([n, w]) => `
+              <div class="req"><span class="av">${initials(n)}</span><span><b>${n}</b><small>${g.trial || 'Prova'} · ${w}</small></span>
+              <span class="ra"><button aria-label="Rifiuta" data-r="no">${ui('close', 16)}</button><button class="y" aria-label="Accetta" data-r="ok">${ui('check', 16)}</button></span></div>`).join('')}
+          </div>
+        </div>` : ''}
+
+        <div class="sec">
+          <div class="sec-h"><h2 class="display">La tua scheda</h2><span class="mono">${pct}% completa</span></div>
+          <div class="card-box"><div class="sum-list">
+            ${rows.map(([s, l, d, ok]) => `<a class="sum-row ${ok ? 'ok' : 'warn'}" href="palestra-nuova.html?edit=${s}"><span class="si">${ui(ok ? 'check' : 'minus', 14)}</span><span class="tt"><b>${l}</b><small>${d}</small></span><span class="ed">Modifica</span></a>`).join('')}
+          </div></div>
+          <a class="btn btn-ghost btn-block" style="margin-top:10px" href="palestra.html?id=mine">${ui('eye', 18)} Vedi come la vedono gli utenti</a>
+        </div>
+
+        <div class="sec">
+          <div class="plan-now">
+            <span class="tt"><b>Piano ${PL}</b><small>${g._plan === 'boost' ? 'Pin in evidenza attivo · rinnovo 1 nov' : 'Passa a Pro o Boost per più visibilità'}</small></span>
+            <a class="btn btn-volt btn-sm" href="business.html" style="height:40px">${g._plan === 'boost' ? 'Gestisci' : 'Migliora'}</a>
+          </div>
+        </div>
+
+        ${accountMenu()}`;
+
+      $$('#reqs .req').forEach(r => $$('[data-r]', r).forEach(b => b.onclick = () => {
+        r.style.transition = 'opacity .3s'; r.style.opacity = 0;
+        setTimeout(() => { r.remove(); $('#reqN').textContent = `${$$('#reqs .req').length} nuove`; }, 300);
+        toast(b.dataset.r === 'ok' ? 'Prova confermata: avvisiamo l\'utente' : 'Richiesta rifiutata');
+      }));
+      $('#out').onclick = logout;
+
+      // status bar chiara sopra la foto, scura dopo
+      const sc = $('#root');
+      sc.addEventListener('scroll', () => {
+        const over = sc.scrollTop < 150;
+        $('.statusbar').classList.toggle('light', over);
+        $('.statusbar').classList.toggle('solid', !over);
+      }, { passive: true });
+    }
+
+    function accountMenu() {
+      return `
+        <div class="sec">
+          <div class="sec-h"><h2 class="display">Account</h2></div>
+          <div class="menu">
+            <div class="mrow"><span class="mi" style="background:var(--volt);font-weight:800;font-size:12px">${initials(ses.name)}</span><span class="tt">${ses.name}<small>${ses.email || ''} · ${ses.gymRole === 'staff' ? 'Manager' : 'Titolare'}</small></span></div>
+            <button class="mrow" onclick="toast('Inviti staff in arrivo')"><span class="mi">${ui('users', 19)}</span><span class="tt">Staff<small>Invita collaboratori a gestire la pagina</small></span>${ui('arrow', 16, 'arr')}</button>
+            <button class="mrow" onclick="toast('Notifiche')"><span class="mi">${ui('bell', 19)}</span><span class="tt">Notifiche<small>Richieste prova, recensioni</small></span>${ui('arrow', 16, 'arr')}</button>
+            <button class="mrow" onclick="toast('Fatture')"><span class="mi">${ui('doc', 19)}</span><span class="tt">Fatture e pagamenti</span>${ui('arrow', 16, 'arr')}</button>
+            <button class="mrow danger" id="out"><span class="mi">${ui('logout', 19)}</span><span class="tt">Esci</span></button>
+          </div>
+        </div>
+        <div style="height:120px"></div>`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Rivendica palestra</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen">
+      <header class="wz-head">
+        <div class="wz-row">
+          <button class="icon-btn" id="back" aria-label="Indietro"></button>
+          <span class="tt"><small class="mono" id="stepLbl"></small><b>Rivendica palestra</b></span>
+        </div>
+        <div class="wz-bar" id="bar"></div>
+      </header>
+
+      <div class="scroll" id="scroll">
+        <div class="wz-body">
+          <!-- 1 -->
+          <section class="wz-step" data-s="1">
+            <div id="gymCard"></div>
+            <h2 class="display" id="h1"></h2>
+            <div class="card-box"><div class="sum-list" id="perks"></div></div>
+            <div id="already"></div>
+            <div class="stack" id="acct">
+              <span class="mono muted" style="margin:6px 4px -4px">Crea il tuo account palestra</span>
+              <div class="field"><label for="a-name">Nome e cognome</label><input class="inp" id="a-name" autocomplete="name" placeholder="Es. Paolo Neri"></div>
+              <div class="field"><label for="a-mail">Email</label><input class="inp" id="a-mail" type="email" autocomplete="email" placeholder="nome@email.it"></div>
+              <div class="field"><label for="a-pw">Password</label><input class="inp" id="a-pw" type="password" autocomplete="new-password" placeholder="min. 8 caratteri"></div>
+            </div>
+            <p class="lead" id="asUser" hidden></p>
+          </section>
+
+          <!-- 2 -->
+          <section class="wz-step" data-s="2">
+            <h2 class="display">Dimostra che è tua</h2>
+            <p class="lead">Scegli come verificare. Serve a evitare che qualcuno si spacci per te.</p>
+            <div class="stack" id="methods" style="gap:8px"></div>
+            <div class="field"><label>Il tuo ruolo</label>
+              <div class="role-seg" id="roleSeg">
+                <button class="on" data-r="titolare"><b>Titolare</b><small>Proprietario o socio</small></button>
+                <button data-r="staff"><b>Manager / staff</b><small>Autorizzato dal titolare</small></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3 -->
+          <section class="wz-step" data-s="3">
+            <h2 class="display" id="h3"></h2>
+            <p class="lead" id="p3"></p>
+            <div id="codeBox" class="stack">
+              <div class="otp" id="otp"></div>
+              <button class="w-login" style="text-align:left;margin:0" onclick="toast('Codice inviato di nuovo')"><span class="muted">Non è arrivato?</span> <u style="font-weight:700">Invia di nuovo</u></button>
+            </div>
+            <div id="docBox" class="stack">
+              <button class="ph add" id="upDoc" style="aspect-ratio:auto;height:140px;border-radius:20px"></button>
+              <p class="hint" style="font-size:12.5px;color:var(--mute);margin:0">Visura camerale, fattura intestata o contratto d'affitto dei locali. PDF o foto.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="wz-foot"><button class="btn btn-ink" id="next"></button></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    mountShell('rivendica.html');
+    const gym = GYMS.find(x => x.id === new URLSearchParams(location.search).get('id')) || GYMS[9];
+    const ses = getSession();
+    const mask = s => s ? s.slice(0, 3) + s.slice(3).replace(/\d(?=(?:\D*\d){3})/g, '•') : '';
+    const mailDomain = gym.site ? `info@${gym.site}` : null;
+
+    $('#back').innerHTML = ui('back', 20);
+    $('#gymCard').innerHTML = `
+      <div class="found-row" style="box-shadow:var(--sh-1)">
+        <img src="${photo(gym.photos[0], 120)}" alt="">
+        <span><b>${gym.name}</b><small>${gym.address}</small></span>
+        <span class="tag tag-soft">${gym.type}</span>
+      </div>`;
+    $('#h1').textContent = `Gestisci ${gym.name} su Spotter`;
+    $('#perks').innerHTML = [
+      ['Aggiorna attrezzi, prezzi e orari', 'Le informazioni giuste portano iscritti giusti'],
+      ['Ricevi le richieste di prova gratuita', 'Direttamente in app, con notifica'],
+      ['Rispondi alle recensioni', 'Con il badge “Risposta del titolare”'],
+      ['Guarda le statistiche', 'Visite, chiamate, indicazioni richieste'],
+    ].map(([b, s]) => `<div class="sum-row ok"><span class="si">${ui('check', 14)}</span><span class="tt"><b>${b}</b><small>${s}</small></span></div>`).join('');
+    if (gym.verified) $('#already').innerHTML = `<div class="no-trial" style="margin:0;background:#FBEADF;color:#9A4A12">${ui('alert' in UI_ICONS ? 'alert' : 'shield', 18)} Questa palestra risulta già gestita da un account. Se sei tu il titolare, la tua richiesta verrà controllata a mano dallo staff.</div>`;
+    if (ses) {
+      $('#acct').hidden = true;
+      $('#asUser').hidden = false;
+      $('#asUser').innerHTML = ses.role === 'gym'
+        ? `Collegheremo la palestra al tuo account <b>${ses.email || ses.name}</b>.`
+        : `Sei collegato come <b>${ses.name}</b>: il tuo account diventerà anche un account palestra.`;
+    }
+
+    /* metodi di verifica */
+    let method = gym.phone ? 'call' : 'doc', role = 'titolare';
+    const METHODS = [
+      ['call', 'phone', 'Chiamata al numero della palestra', gym.phone ? `Ti chiamiamo al ${mask(gym.phone)} e ti dettiamo un codice` : 'Nessun numero registrato', !!gym.phone, 'Subito'],
+      ['mail', 'mail', 'Email all\'indirizzo del sito', mailDomain ? `Inviamo un codice a ${mailDomain}` : 'Nessun sito registrato', !!mailDomain, 'Subito'],
+      ['doc', 'doc', 'Carica un documento', 'Visura camerale, fattura o contratto', true, '24–48 ore'],
+    ];
+    function renderMethods() {
+      $('#methods').innerHTML = METHODS.map(([k, i, t, s, ok, time]) => `
+        <button class="opt ${method === k ? 'on' : ''}" data-m="${k}" ${ok ? '' : 'disabled style="opacity:.4"'} style="display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center">
+          <span class="ti" style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:${method === k ? 'rgba(255,255,255,.1)' : 'var(--chalk)'}">${ui(i, 20)}</span>
+          <span><b>${t}</b><small>${s}</small></span><span class="mono" style="font-size:9.5px;opacity:.7">${time}</span>
+        </button>`).join('');
+      $$('#methods .opt:not([disabled])').forEach(b => b.onclick = () => { method = b.dataset.m; renderMethods(); });
+    }
+    $$('#roleSeg button').forEach(b => b.onclick = () => { role = b.dataset.r; $$('#roleSeg button').forEach(x => x.classList.toggle('on', x === b)); });
+
+    /* codice */
+    $('#otp').innerHTML = '<input inputmode="numeric" maxlength="1" aria-label="Cifra">'.repeat(6);
+    const boxes = $$('#otp input');
+    boxes.forEach((b, i) => {
+      b.oninput = () => { b.value = b.value.replace(/\D/g, ''); b.classList.toggle('filled', !!b.value); if (b.value && boxes[i + 1]) boxes[i + 1].focus(); setFoot(); };
+      b.onkeydown = e => { if (e.key === 'Backspace' && !b.value && boxes[i - 1]) boxes[i - 1].focus(); };
+    });
+    let docUp = false;
+    $('#upDoc').innerHTML = `<span>${ui('upload', 26)}Carica documento</span>`;
+    $('#upDoc').onclick = () => {
+      docUp = true;
+      $('#upDoc').innerHTML = `<span style="color:var(--ink)">${ui('doc', 26)}visura_camerale.pdf<br><small style="color:var(--ok)">Caricato ✓</small></span>`;
+      $('#upDoc').style.borderStyle = 'solid'; setFoot();
+    };
+
+    /* step */
+    let step = 1;
+    function setFoot() {
+      const nb = $('#next');
+      if (step === 1) nb.innerHTML = `Continua ${ui('arrow', 18)}`;
+      if (step === 2) nb.innerHTML = method === 'doc' ? `Continua ${ui('arrow', 18)}` : `Invia il codice ${ui('arrow', 18)}`;
+      if (step === 3) {
+        const ready = method === 'doc' ? docUp : boxes.every(b => b.value);
+        nb.className = 'btn btn-volt'; nb.innerHTML = `${ui('check', 18)} ${method === 'doc' ? 'Invia richiesta' : 'Verifica'}`;
+        nb.style.opacity = ready ? 1 : .45;
+      } else { nb.className = 'btn btn-ink'; nb.style.opacity = 1; }
+    }
+    function go(s) {
+      step = s;
+      $$('.wz-step').forEach(x => x.classList.toggle('on', +x.dataset.s === s));
+      $('#stepLbl').textContent = `Passo ${s} di 3`;
+      $('#bar').innerHTML = [1, 2, 3].map(i => `<i class="${i < s ? 'done' : i === s ? 'cur' : ''}"></i>`).join('');
+      if (s === 2) renderMethods();
+      if (s === 3) {
+        const isDoc = method === 'doc';
+        $('#codeBox').hidden = isDoc; $('#docBox').hidden = !isDoc;
+        $('#h3').textContent = isDoc ? 'Carica il documento' : 'Inserisci il codice';
+        $('#p3').innerHTML = isDoc ? 'Lo staff Spotter lo controlla entro 48 ore. Nel frattempo puoi già preparare la scheda.'
+          : method === 'call' ? `Stiamo chiamando il <b>${mask(gym.phone)}</b>. Rispondi e inserisci il codice che senti.`
+          : `Abbiamo inviato un codice a <b>${mailDomain}</b>.`;
+        if (!isDoc) setTimeout(() => boxes[0].focus(), 300);
+      }
+      $('#scroll').scrollTop = 0;
+      setFoot();
+    }
+    $('#back').onclick = () => step === 1 ? history.back() : go(step - 1);
+
+    $('#next').onclick = () => {
+      if (step === 1) {
+        if (!ses) {
+          if (!$('#a-name').value.trim() || !/\S+@\S+\.\S+/.test($('#a-mail').value) || $('#a-pw').value.length < 8) { toast('Completa i dati dell\'account'); return; }
+        }
+        return go(2);
+      }
+      if (step === 2) return go(3);
+      const ready = method === 'doc' ? docUp : boxes.every(b => b.value);
+      if (!ready) { toast(method === 'doc' ? 'Carica un documento' : 'Inserisci il codice'); return; }
+      // completa: account palestra + palestra collegata
+      const s = ses || { name: $('#a-name').value.trim(), email: $('#a-mail').value, since: 'ott 2026' };
+      setSession({ ...s, role: 'gym', gymRole: role });
+      const status = method === 'doc' || gym.verified ? 'verifica' : 'attiva';
+      setMyGym({ ...JSON.parse(JSON.stringify(gym)), _status: status, _claim: true, _plan: 'base' });
+      pushToAdmin({ ...gym, _claim: true }, status === 'attiva' ? 'attiva' : 'verifica');
+      const d = document.createElement('div');
+      d.className = 'done-screen';
+      d.innerHTML = `
+        <div class="big-check">${ui('check', 48)}</div>
+        <h2 class="display">${status === 'attiva' ? 'È tua!' : 'Richiesta inviata'}</h2>
+        <p>${status === 'attiva' ? `Verifica completata. Ora gestisci ${gym.name}: aggiorna attrezzi, prezzi e foto.` : `Controlliamo la tua richiesta per ${gym.name} entro 48 ore. Intanto puoi preparare la scheda.`}</p>
+        <a class="btn btn-ink btn-block" href="gestione.html" style="height:56px">Vai alla gestione ${ui('arrow', 18)}</a>`;
+      $('.screen').appendChild(d);
+    };
+    go(1);
+  </script>
+</body>
+</html>

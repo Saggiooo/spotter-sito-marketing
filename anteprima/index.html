@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Mappa</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen">
+      <div id="map"></div>
+      <div class="map-fade"></div>
+      <div class="map-fade bottom"></div>
+
+      <div class="top-ui">
+        <div class="searchbar">
+          <a href="cerca.html" class="search-pill">
+            <svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <span class="sp-text"><b>Cerca palestre</b><small>Milano · attrezzi, prezzo, servizi</small></span>
+          </a>
+          <a href="cerca.html" class="filter-btn" id="filterBtn" aria-label="Filtri"></a>
+        </div>
+        <div class="quick hscroll" id="quick"></div>
+      </div>
+
+      <div class="fab-col">
+        <button class="icon-btn" id="locate" aria-label="La mia posizione"></button>
+        <a class="icon-btn" href="salvate.html" aria-label="Vista lista" id="listBtn"></a>
+      </div>
+
+      <div class="cards" id="cards"></div>
+      <nav id="tabbar"></nav>
+    </div>
+  </div>
+
+  <script src="../assets/vendor/leaflet/leaflet.js"></script>
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    mountShell('index.html');
+
+    $('#filterBtn').innerHTML = ui('sliders', 22);
+    $('#locate').innerHTML = ui('locate', 22);
+    $('#listBtn').innerHTML = ui('list', 22);
+
+    /* ---------- mappa ---------- */
+    const map = L.map('map', { zoomControl: false, attributionControl: true }).setView([45.4685, 9.1925], 14);
+    addTiles(map);
+
+    L.marker(USER_POS, { icon: L.divIcon({ className: 'pin-wrap', html: '<div class="me"></div>', iconSize: [0, 0] }), interactive: false }).addTo(map);
+
+    /* ---------- quick filters ---------- */
+    let F = loadFilters();
+    const QUICK = [
+      ['trial', 'Prova gratuita', f => f.trial, f => f.trial = !f.trial, 'ticket'],
+      ['open', 'Aperto ora', f => f.openNow, f => f.openNow = !f.openNow, 'clock'],
+      ['rack', 'Squat rack', f => f.equip.includes('squat-rack'), f => toggleIn(f.equip, 'squat-rack'), null, 'squat-rack'],
+      ['price', 'Sotto €40', f => f.priceMax <= 40, f => f.priceMax = f.priceMax <= 40 ? 100 : 40, null],
+      ['pool', 'Piscina', f => f.amenities.includes('piscina'), f => toggleIn(f.amenities, 'piscina'), null, null, 'piscina'],
+      ['h24', '24h', f => f.h24, f => f.h24 = !f.h24, null, null, 'h24'],
+    ];
+    function toggleIn(arr, v) { const i = arr.indexOf(v); i >= 0 ? arr.splice(i, 1) : arr.push(v); }
+
+    function renderQuick() {
+      $('#quick').innerHTML = QUICK.map(([k, label, is, , uiI, eq, am]) => {
+        const ic = uiI ? ui(uiI, 16) : eq ? eqIcon(eq, 16) : am ? amIcon(am, 16) : '';
+        return `<button class="chip ${is(F) ? 'on' : ''}" data-k="${k}">${ic}${label}</button>`;
+      }).join('');
+      $$('#quick .chip').forEach(b => b.onclick = () => {
+        QUICK.find(q => q[0] === b.dataset.k)[3](F);
+        saveFilters(F); apply();
+      });
+      const n = activeFilterCount(F);
+      $('#filterBtn').innerHTML = ui('sliders', 22) + (n ? `<span class="badge">${n}</span>` : '');
+    }
+
+    /* ---------- markers + cards ---------- */
+    const markers = {};
+    let list = [], activeIdx = 0;
+
+    function pinHtml(g, i) {
+      return `<div class="pin ${g.featured ? 'is-featured' : ''}" style="--d:${0.15 + i * 0.05}s">${g.featured ? ui('bolt', 13) : ''}€${g.price}</div>`;
+    }
+
+    function cardHtml(g, i) {
+      const st = openStatus(g);
+      const fav = getFavs().includes(g.id);
+      return `
+      <a class="gcard" href="palestra.html?id=${g.id}" data-i="${i}" style="--d:${0.2 + Math.min(i, 3) * 0.06}s">
+        <div class="gcard-img">
+          <img src="${photo(g.photos[0], 400)}" alt="" loading="lazy">
+          ${g.trial ? `<span class="tag tag-volt">${ui('ticket', 12)}Prova gratis</span>` : ''}
+        </div>
+        <div class="gcard-body">
+          <div class="gcard-type mono"><span>${g.type}</span>${g.featured ? `<span class="feat">${ui('bolt', 11)}Top</span>` : ''}</div>
+          <h3 class="display">${g.name}</h3>
+          <div class="gcard-meta">
+            ${ui('star', 14)} ${g.rating.toFixed(1).replace('.', ',')} <span class="muted">(${g.reviews})</span>
+            <span class="sep"></span><span class="muted">${fmtKm(distKm(g.lat, g.lng))}</span>
+          </div>
+          <div class="gcard-meta" style="margin-top:6px">
+            <span class="status-dot ${st.open ? (st.soon ? 'soon' : '') : 'off'}"></span>
+            <span class="muted">${st.open ? (g.hours === '24h' ? 'Aperto 24h' : 'Aperto') : 'Chiuso'} · ${g.area}</span>
+          </div>
+          <div class="gcard-foot">
+            <div class="price">€${g.price}<small> /mese</small></div>
+            <span class="go">${ui('arrowUR', 18)}</span>
+          </div>
+        </div>
+      </a>`;
+    }
+
+    function apply() {
+      renderQuick();
+      list = GYMS.filter(g => gymMatches(g, F))
+        .sort((a, b) => (b.featured - a.featured) || distKm(a.lat, a.lng) - distKm(b.lat, b.lng));
+
+      Object.values(markers).forEach(m => m.remove());
+      list.forEach((g, i) => {
+        if (!markers[g.id]) {
+          markers[g.id] = L.marker([g.lat, g.lng], { icon: L.divIcon({ className: 'pin-wrap', html: pinHtml(g, i), iconSize: [0, 0] }) });
+          markers[g.id].on('click', () => select(list.indexOf(g), true));
+        }
+        markers[g.id].addTo(map);
+      });
+
+
+      const cards = $('#cards');
+      cards.innerHTML = list.length
+        ? list.map(cardHtml).join('')
+        : `<div class="empty-card"><h3 class="display">Nessuna palestra</h3><p>Prova ad allargare i filtri.</p><button class="btn btn-ink" id="clearF">Azzera filtri</button></div>`;
+      cards.scrollLeft = 0;
+      if ($('#clearF')) $('#clearF').onclick = () => { F = { ...DEFAULT_FILTERS }; saveFilters(F); apply(); };
+      if (list.length) {
+        map.fitBounds(L.latLngBounds(list.map(g => [g.lat, g.lng]).concat([USER_POS])), {
+          paddingTopLeft: [40, 200], paddingBottomRight: [40, 320], maxZoom: 15, animate: !first,
+        });
+        first = false;
+        select(0, false, true);
+      }
+    }
+    let first = true;
+
+    function select(i, scrollCard, noPan) {
+      if (i < 0 || !list[i]) return;
+      activeIdx = i;
+      list.forEach((g, j) => {
+        const el = markers[g.id].getElement();
+        if (el) el.firstElementChild.classList.toggle('is-active', j === i);
+        markers[g.id].setZIndexOffset(j === i ? 1000 : (g.featured ? 500 : 0));
+      });
+      const g = list[i];
+      if (!noPan) {
+        const p = map.project([g.lat, g.lng], map.getZoom()).add([0, 110]);
+        map.panTo(map.unproject(p, map.getZoom()), { animate: true, duration: .5 });
+      }
+      if (scrollCard) {
+        const card = $(`.gcard[data-i="${i}"]`);
+        const cards = $('#cards');
+        cards.scrollTo({ left: card.offsetLeft - (cards.clientWidth - card.clientWidth) / 2, behavior: 'smooth' });
+      }
+    }
+
+    let scT;
+    $('#cards').addEventListener('scroll', e => {
+      clearTimeout(scT);
+      scT = setTimeout(() => {
+        const c = e.target, first = c.querySelector('.gcard');
+        if (!first) return;
+        const w = first.offsetWidth + 12;
+        const i = Math.round(c.scrollLeft / w);
+        if (i !== activeIdx) select(i, false);
+      }, 90);
+    });
+
+    $('#locate').onclick = () => map.flyTo(USER_POS, 15, { duration: .8 });
+
+    apply();
+  </script>
+</body>
+</html>

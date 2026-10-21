@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Cerca</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen">
+      <div class="scroll" id="scroll">
+        <header class="page-head">
+          <div class="head-row">
+            <a href="index.html" class="icon-btn" id="back" aria-label="Indietro"></a>
+            <label class="search-input">
+              <span id="sIco"></span>
+              <input id="q" type="search" placeholder="Palestra, zona o attrezzo…" autocomplete="off">
+            </label>
+            <button class="link-reset" id="reset">Reset</button>
+          </div>
+        </header>
+
+        <div class="suggest" id="suggest" hidden></div>
+
+        <div class="filters" id="filters">
+          <!-- Attrezzatura -->
+          <section class="fsec" style="--d:.02s">
+            <div class="fsec-h"><h2 class="display">Attrezzatura</h2><span class="mono" id="eqCount"></span></div>
+            <p class="fsec-note">Mostra solo palestre che hanno <b>tutti</b> gli attrezzi selezionati.</p>
+            <div class="cat-tabs hscroll" id="catTabs"></div>
+            <div class="eq-grid" id="eqGrid"></div>
+            <div class="db-range">
+              <div class="db-h"><span class="db-ic" id="dbIc"></span><span><b>Manubri fino ad almeno</b><small>Peso massimo della rastrelliera</small></span></div>
+              <div class="seg" id="dbMax"></div>
+            </div>
+          </section>
+
+          <!-- Prezzo -->
+          <section class="fsec" style="--d:.06s">
+            <div class="fsec-h"><h2 class="display">Prezzo mensile</h2><span class="big-val" id="priceVal"></span></div>
+            <div class="hist" id="hist"></div>
+            <div class="range">
+              <div class="track"><div class="fill" id="rFill"></div></div>
+              <input type="range" id="price" min="20" max="100" step="5">
+            </div>
+            <div class="range-labels mono"><span>€20</span><span>€60</span><span>€100+</span></div>
+          </section>
+
+          <!-- Disponibilità -->
+          <section class="fsec" style="--d:.1s">
+            <div class="fsec-h"><h2 class="display">Disponibilità</h2></div>
+            <div id="toggles"></div>
+          </section>
+
+          <!-- Distanza -->
+          <section class="fsec" style="--d:.12s">
+            <div class="fsec-h"><h2 class="display">Distanza</h2><span class="mono">da Duomo</span></div>
+            <div class="seg" id="dist"></div>
+          </section>
+
+          <!-- Tipo -->
+          <section class="fsec">
+            <div class="fsec-h"><h2 class="display">Tipo di palestra</h2></div>
+            <div class="chips-wrap" id="types"></div>
+          </section>
+
+          <!-- Servizi -->
+          <section class="fsec">
+            <div class="fsec-h"><h2 class="display">Servizi</h2></div>
+            <div class="chips-wrap" id="amen"></div>
+          </section>
+
+          <!-- Valutazione -->
+          <section class="fsec">
+            <div class="fsec-h"><h2 class="display">Valutazione</h2></div>
+            <div class="seg" id="rating"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="sticky-cta"><button class="btn btn-ink btn-block" id="go"></button></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    mountShell('cerca.html');
+    $('#back').innerHTML = ui('back', 22);
+    $('#sIco').innerHTML = ui('search', 20);
+    $('#dbIc').innerHTML = eqIcon('manubri', 26);
+
+    let F = loadFilters();
+    let cat = 'tutti';
+    const toggle = (arr, v) => { const i = arr.indexOf(v); i >= 0 ? arr.splice(i, 1) : arr.push(v); };
+    const gymsWith = id => GYMS.filter(g => g.equipment.some(e => e[0] === id)).length;
+
+    /* ---------- attrezzi ---------- */
+    function renderCats() {
+      const cats = [['tutti', 'Tutti'], ...Object.entries(EQUIP_CATS)];
+      $('#catTabs').innerHTML = cats.map(([k, l]) => {
+        const n = k === 'tutti' ? F.equip.length : F.equip.filter(e => EQUIP[e].cat === k).length;
+        return `<button class="${cat === k ? 'on' : ''}" data-k="${k}">${l}${n ? ` · ${n}` : ''}</button>`;
+      }).join('');
+      $$('#catTabs button').forEach(b => b.onclick = () => { cat = b.dataset.k; renderCats(); renderEq(); });
+    }
+    function renderEq() {
+      // solo attrezzi presenti in almeno una palestra
+      const ids = Object.keys(EQUIP).filter(id => gymsWith(id) > 0 && (cat === 'tutti' || EQUIP[id].cat === cat));
+      $('#eqGrid').innerHTML = ids.map(id => `
+        <button class="eq-pick ${F.equip.includes(id) ? 'on' : ''}" data-id="${id}">
+          <span class="ck">${ui('check', 12)}</span>
+          ${eqIcon(id, 38)}
+          <span>${EQUIP[id].name}</span>
+          <span class="avail">${gymsWith(id)} palestre</span>
+        </button>`).join('');
+      $$('#eqGrid .eq-pick').forEach(b => b.onclick = () => {
+        toggle(F.equip, b.dataset.id);
+        b.classList.toggle('on');
+        renderCats(); update();
+      });
+    }
+
+    /* ---------- prezzo ---------- */
+    function renderPrice() {
+      const bins = [];
+      for (let p = 20; p < 100; p += 10) bins.push(GYMS.filter(g => g.price >= p && g.price < p + 10).length);
+      bins[bins.length - 1] += GYMS.filter(g => g.price >= 100).length;
+      const max = Math.max(...bins);
+      $('#hist').innerHTML = bins.map((b, i) =>
+        `<span style="height:${(b / max) * 100}%" class="${20 + i * 10 > F.priceMax ? 'off' : ''}"></span>`).join('');
+      $('#price').value = F.priceMax;
+      $('#rFill').style.width = ((F.priceMax - 20) / 80 * 100) + '%';
+      $('#priceVal').textContent = F.priceMax >= 100 ? 'Qualsiasi' : `≤ €${F.priceMax}`;
+    }
+    $('#price').oninput = e => { F.priceMax = +e.target.value; renderPrice(); update(); };
+
+    /* ---------- toggle ---------- */
+    const TOG = [
+      ['trial', 'ticket', 'Prova gratuita', 'Ingresso o settimana di prova senza costi'],
+      ['openNow', 'clock', 'Aperto adesso', 'In base all\'orario attuale'],
+      ['h24', null, 'Aperto 24/7', 'Accesso a qualsiasi ora'],
+      ['women', 'venus', 'Spazi riservati donne', 'Palestra solo donne o area dedicata'],
+    ];
+    function renderToggles() {
+      $('#toggles').innerHTML = TOG.map(([k, i, t, s]) => `
+        <div class="toggle-row" data-k="${k}">
+          <span class="ti">${i ? ui(i, 20) : amIcon('h24', 20)}</span>
+          <span class="tt"><b>${t}</b><small>${s}</small></span>
+          <button class="switch ${F[k] ? 'on' : ''}" aria-label="${t}"></button>
+        </div>`).join('');
+      $$('#toggles .toggle-row').forEach(r => r.onclick = () => { F[r.dataset.k] = !F[r.dataset.k]; renderToggles(); update(); });
+    }
+
+    /* ---------- segmented ---------- */
+    function seg(el, opts, key) {
+      $(el).innerHTML = opts.map(([v, l]) => `<button class="${F[key] === v ? 'on' : ''}" data-v="${v}">${l}</button>`).join('');
+      $$(el + ' button').forEach(b => b.onclick = () => {
+        F[key] = b.dataset.v === 'null' ? null : +b.dataset.v;
+        seg(el, opts, key); update();
+      });
+    }
+
+    /* ---------- chips ---------- */
+    function renderTypes() {
+      $('#types').innerHTML = GYM_TYPES.map(t => `<button class="chip ${F.types.includes(t) ? 'on' : ''}" data-t="${t}">${t}</button>`).join('');
+      $$('#types .chip').forEach(b => b.onclick = () => { toggle(F.types, b.dataset.t); b.classList.toggle('on'); update(); });
+    }
+    function renderAmen() {
+      $('#amen').innerHTML = Object.entries(AMENITIES).filter(([k]) => k !== 'h24').map(([k, l]) =>
+        `<button class="chip am-chip ${F.amenities.includes(k) ? 'on' : ''}" data-a="${k}">${amIcon(k, 18)}${l}</button>`).join('');
+      $$('#amen .chip').forEach(b => b.onclick = () => { toggle(F.amenities, b.dataset.a); b.classList.toggle('on'); update(); });
+    }
+
+    /* ---------- ricerca testuale ---------- */
+    const hl = (s, q) => s.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig'), '<mark>$1</mark>');
+    function renderSuggest() {
+      const q = F.q.trim();
+      const box = $('#suggest');
+      if (!q) { box.hidden = true; return; }
+      const ql = q.toLowerCase();
+      const gyms = GYMS.filter(g => (g.name + ' ' + g.area + ' ' + g.type).toLowerCase().includes(ql)).slice(0, 4);
+      const eqs = Object.entries(EQUIP).filter(([, e]) => e.name.toLowerCase().includes(ql)).slice(0, 4);
+      box.hidden = false;
+      box.innerHTML =
+        (gyms.length ? `<h4 class="mono">Palestre</h4>` + gyms.map(g => `
+          <a class="sg-row" href="palestra.html?id=${g.id}">
+            <img src="${photo(g.photos[0], 120)}" alt="">
+            <span class="tt"><b>${hl(g.name, q)}</b><small>${g.type} · ${hl(g.area, q)} · ${fmtKm(distKm(g.lat, g.lng))}</small></span>
+            ${ui('arrowUR', 18)}
+          </a>`).join('') : '') +
+        (eqs.length ? `<h4 class="mono">Attrezzi</h4>` + eqs.map(([id, e]) => `
+          <button class="sg-row" style="width:100%;text-align:left" data-eq="${id}">
+            <span class="sg-ic">${eqIcon(id, 28)}</span>
+            <span class="tt"><b>${hl(e.name, q)}</b><small>${gymsWith(id)} palestre · ${EQUIP_CATS[e.cat]}</small></span>
+            <span class="tag ${F.equip.includes(id) ? 'tag-volt' : 'tag-soft'}">${F.equip.includes(id) ? 'Aggiunto' : '+ Filtro'}</span>
+          </button>`).join('') : '') +
+        (!gyms.length && !eqs.length ? `<p style="color:var(--mute);font-size:14px">Nessun risultato per “${q}”.</p>` : '');
+      $$('#suggest [data-eq]').forEach(b => b.onclick = () => {
+        toggle(F.equip, b.dataset.eq); renderCats(); renderEq(); renderSuggest(); update();
+      });
+    }
+    $('#q').value = F.q;
+    $('#q').oninput = e => { F.q = e.target.value; renderSuggest(); update(); };
+
+    /* ---------- CTA ---------- */
+    function update() {
+      saveFilters(F);
+      const n = GYMS.filter(g => gymMatches(g, F)).length;
+      const b = $('#go');
+      b.disabled = !n;
+      b.innerHTML = n
+        ? `Mostra <span class="num">${n}</span> palestre sulla mappa ${ui('arrow', 18)}`
+        : 'Nessuna palestra con questi filtri';
+      $('#eqCount').textContent = F.equip.length ? `${F.equip.length} selezionati` : `${Object.keys(EQUIP).filter(id => gymsWith(id) > 0).length} tipi`;
+    }
+    $('#go').onclick = () => location.href = 'index.html';
+    $('#reset').onclick = () => { F = JSON.parse(JSON.stringify(DEFAULT_FILTERS)); $('#q').value = ''; renderAll(); };
+
+    function renderAll() {
+      renderCats(); renderEq(); renderPrice(); renderToggles();
+      seg('#dist', [[1, '1 km'], [2, '2 km'], [5, '5 km'], [null, 'Ovunque']], 'distMax');
+      seg('#rating', [[0, 'Tutte'], [4, '4,0+'], [4.5, '4,5+'], [4.8, '4,8+']], 'rating');
+      seg('#dbMax', [[0, 'Tutti'], [30, '30 kg'], [40, '40 kg'], [50, '50 kg'], [60, '60 kg']], 'dbMax');
+      renderTypes(); renderAmen(); renderSuggest(); update();
+    }
+    renderAll();
+  </script>
+</body>
+</html>

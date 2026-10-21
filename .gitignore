@@ -1,0 +1,37 @@
+# Sistema operativo ed editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/
+
+# Registro dei consensi cookie: dati personali, mai nel repository
+storage/consent/*
+!storage/consent/.htaccess
+!storage/consent/index.html
+
+# Chiave degli sblocchi e contatori della manutenzione
+storage/maintenance/
+
+# Configurazione e segreti locali
+.env
+.env.*
+!.env.example
+config.local.php
+
+# Log, cache e file temporanei
+*.log
+logs/
+tmp/
+.cache/
+
+# Dipendenze e artefatti, se in futuro si aggiunge una build
+node_modules/
+/vendor/
+dist/
+
+# Strumenti di test
+.playwright-mcp/
+output/

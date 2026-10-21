@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Salvate</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen">
+      <div class="scroll">
+        <div style="height:66px"></div>
+        <h1 class="big-title display">Salvate</h1>
+        <p class="title-sub" id="sub"></p>
+        <div id="favs"></div>
+
+        <a class="compare" href="#" onclick="toast('Confronto in arrivo');return false">
+          <span class="go"></span>
+          <span class="tt"><b>Confronta palestre</b><small>Prezzi, attrezzi e orari fianco a fianco</small></span>
+        </a>
+
+        <div class="sec-label mono">Vicino a te</div>
+        <div class="list" id="near"></div>
+        <div style="height:120px"></div>
+      </div>
+      <nav id="tabbar"></nav>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    mountShell('salvate.html');
+    $('.compare .go').innerHTML = ui('arrow', 18);
+
+    function row(g, i, removable) {
+      const st = openStatus(g);
+      return `
+      <a class="lrow" href="palestra.html?id=${g.id}" style="--d:${i * .05}s">
+        <img src="${photo(g.photos[0], 300)}" alt="" loading="lazy">
+        <div style="min-width:0">
+          <span class="mono" style="color:var(--mute)">${g.type}</span>
+          <h3 class="display">${g.name}</h3>
+          <div class="gcard-meta">${ui('star', 13)} ${g.rating.toFixed(1).replace('.', ',')} <span class="sep"></span>
+            <span class="status-dot ${st.open ? '' : 'off'}"></span><span class="muted">${fmtKm(distKm(g.lat, g.lng))}</span></div>
+          <div class="price">€${g.price}<small> /mese</small> ${g.trial ? '<span class="tag tag-volt" style="vertical-align:3px;margin-left:4px">Prova gratis</span>' : ''}</div>
+        </div>
+        ${removable ? `<button class="icon-btn fav-on" data-rm="${g.id}" aria-label="Rimuovi">${ui('heart', 18)}</button>` : `<span class="icon-btn">${ui('arrowUR', 18)}</span>`}
+      </a>`;
+    }
+
+    function render() {
+      const favs = getFavs().map(id => GYMS.find(g => g.id === id)).filter(Boolean);
+      $('#sub').textContent = favs.length ? `${favs.length} palestre nella tua lista` : 'Nessuna palestra salvata';
+      $('#favs').innerHTML = favs.length
+        ? `<div class="list">${favs.map((g, i) => row(g, i, true)).join('')}</div>`
+        : `<div class="empty">${eqIcon('kettlebell', 48)}<h3 class="display">Lista vuota</h3><p>Tocca il cuore su una palestra per salvarla qui.</p><a href="index.html" class="btn btn-ink">${ui('map', 18)} Esplora la mappa</a></div>`;
+      $$('[data-rm]').forEach(b => b.onclick = e => { e.preventDefault(); toggleFav(b.dataset.rm); toast('Rimossa dai preferiti'); render(); });
+
+      const near = GYMS.filter(g => !getFavs().includes(g.id)).sort((a, b) => distKm(a.lat, a.lng) - distKm(b.lat, b.lng)).slice(0, 5);
+      $('#near').innerHTML = near.map((g, i) => row(g, i + favs.length, false)).join('');
+      $('.empty .ico') && ($('.empty .ico').style.margin = '0 auto');
+    }
+    render();
+  </script>
+</body>
+</html>

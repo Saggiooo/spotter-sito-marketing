@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Account</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen" data-status="light">
+      <div class="welcome">
+        <div class="grid-bg"></div>
+        <div class="w-top">
+          <div class="w-brand"><span class="logo-dot"></span>SPOTTER</div>
+          <h1 class="display">Trova la tua <em>palestra.</em><br>O fatti trovare.</h1>
+          <p>Crea un account per salvare palestre, prenotare prove gratuite e lasciare recensioni. Oppure porta la tua palestra sulla mappa.</p>
+        </div>
+        <div class="w-sheet">
+          <a class="role-card" href="registrati.html?tipo=utente">
+            <span class="ri" id="riU"></span>
+            <span><b>Mi alleno</b><small>Cerco una palestra, salvo e prenoto prove</small></span>
+            <span id="arU"></span>
+          </a>
+          <a class="role-card gym" href="registrati.html?tipo=palestra">
+            <span class="ri" id="riG"></span>
+            <span><b>Ho una palestra</b><small>Registro o rivendico la mia palestra</small></span>
+            <span id="arG"></span>
+          </a>
+          <p class="w-login">Hai già un account? <button id="loginBtn">Accedi</button></p>
+        </div>
+      </div>
+      <nav id="tabbar"></nav>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    if (getSession()) { location.replace(accountHome()); throw new Error('redirect'); }
+    mountShell('account.html');
+    $('#riU').innerHTML = eqIcon('manubri', 30);
+    $('#riG').innerHTML = ui('store', 26);
+    $('#arU').innerHTML = $('#arG').innerHTML = ui('arrow', 20);
+
+    $('#loginBtn').onclick = () => {
+      const w = openSheet(`
+        <h3 class="display">Accedi</h3>
+        <p class="sub">Bentornato su Spotter.</p>
+        <div class="social"><button class="btn btn-ink" data-demo="user">${ui('apple', 18)} Apple</button><button class="btn btn-ghost" data-demo="user">${ui('google', 18)} Google</button></div>
+        <div class="or">oppure</div>
+        <div class="stack">
+          <div class="field"><label>Email</label><input class="inp" type="email" placeholder="nome@email.it" autocomplete="username"></div>
+          <div class="field"><label>Password <a href="#" class="muted" onclick="toast('Link inviato via email');return false">Dimenticata?</a></label><input class="inp" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+          <button class="btn btn-ink btn-block" data-demo="user">Accedi</button>
+        </div>
+        <div class="or" style="margin-top:16px">demo bozza</div>
+        <div class="row2"><button class="btn btn-ghost" data-demo="user">Utente demo</button><button class="btn btn-volt" data-demo="gym">Palestra demo</button></div>`);
+      $$('[data-demo]', w).forEach(b => b.onclick = () => {
+        if (b.dataset.demo === 'gym') {
+          setSession({ role: 'gym', name: 'Marco Ferri', email: 'marco@ferroclub.it', since: 'gen 2026' });
+          setMyGym({ ...JSON.parse(JSON.stringify(GYMS.find(g => g.id === 'ferro'))), _status: 'attiva', _plan: 'boost' });
+        } else {
+          setSession({ role: 'user', name: 'Alex Moretti', email: 'alex@email.it', since: 'mar 2026' });
+        }
+        location.href = accountHome();
+      });
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Registrati</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen">
+      <div class="scroll">
+        <div class="page-pad">
+          <!-- STEP 1: account -->
+          <section id="s1" class="stack">
+            <div class="back-row"><a href="account.html" class="icon-btn" data-ui="back" aria-label="Indietro"></a><span class="mono muted" id="stepLbl"></span></div>
+            <span class="tag" id="kicker"></span>
+            <h1 class="h-xl display" id="title"></h1>
+            <p class="lead" id="lead" style="margin-top:-4px"></p>
+
+            <div class="social"><button class="btn btn-ink" data-social></button><button class="btn btn-ghost" data-social></button></div>
+            <div class="or">oppure con email</div>
+
+            <div class="field"><label for="f-name" id="nameLbl">Nome e cognome</label><input class="inp" id="f-name" autocomplete="name" placeholder="Es. Giulia Rossi"></div>
+            <div class="field"><label for="f-mail">Email</label><input class="inp" id="f-mail" type="email" autocomplete="email" placeholder="nome@email.it"></div>
+            <div class="field gym-only"><label for="f-tel">Telefono <span class="muted">per la verifica</span></label><input class="inp" id="f-tel" type="tel" autocomplete="tel" placeholder="+39 …"></div>
+            <div class="field"><label for="f-pw">Password <span class="muted">min. 8 caratteri</span></label><input class="inp" id="f-pw" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+            <div class="field gym-only"><label>Il tuo ruolo</label>
+              <div class="role-seg" id="roleSeg">
+                <button class="on" data-r="titolare"><b>Titolare</b><small>Proprietario o socio</small></button>
+                <button data-r="staff"><b>Manager / staff</b><small>Gestisco per conto del titolare</small></button>
+              </div>
+            </div>
+            <button class="check-row" id="privacy"><span class="cbox" data-ui="check"></span><span>Accetto i <u>Termini</u> e l'<u>Informativa privacy</u> di Spotter.</span></button>
+          </section>
+
+          <!-- STEP 2 utente: interessi -->
+          <section id="s2" class="stack" hidden>
+            <div class="back-row"><button class="icon-btn" id="back2" data-ui="back" aria-label="Indietro"></button><button class="mono muted" id="skip">Salta</button></div>
+            <span class="tag tag-volt">Quasi fatto</span>
+            <h1 class="h-xl display">Come ti alleni?</h1>
+            <p class="lead" style="margin-top:-4px">Ti mostriamo prima le palestre giuste per te. Puoi cambiarlo quando vuoi.</p>
+            <div class="chips-wrap" id="interests"></div>
+            <div class="field" style="margin-top:6px"><label>Zona</label><div class="inp-pre"><span data-ui="pin"></span><input class="inp" value="Milano" placeholder="Città o quartiere"></div></div>
+            <button class="check-row on" id="notif"><span class="cbox" data-ui="check"></span><span>Avvisami quando una palestra vicina attiva una prova gratuita.</span></button>
+          </section>
+        </div>
+      </div>
+
+      <div class="wz-foot"><button class="btn btn-ink" id="next"></button></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    const tipo = new URLSearchParams(location.search).get('tipo') === 'palestra' ? 'palestra' : 'utente';
+    const isGym = tipo === 'palestra';
+    mountShell(isGym ? 'registrati.html?tipo=palestra' : 'registrati.html?tipo=utente');
+    $$('[data-ui]').forEach(el => el.innerHTML = ui(el.dataset.ui, el.classList.contains('cbox') ? 14 : 20));
+    const [sApple, sGoogle] = $$('[data-social]');
+    sApple.innerHTML = `${ui('apple', 18)} Apple`;
+    sGoogle.innerHTML = `${ui('google', 18)} Google`;
+
+    $('#kicker').className = 'tag ' + (isGym ? 'tag-volt' : 'tag-ink');
+    $('#kicker').innerHTML = isGym ? `${ui('store', 12)} Account palestra` : `${ui('user', 12)} Account utente`;
+    $('#title').innerHTML = isGym ? 'Porta la tua palestra su Spotter' : 'Crea il tuo account';
+    $('#lead').textContent = isGym
+      ? 'Prima crei il tuo account, poi cerchiamo insieme la tua palestra: se esiste già la rivendichi, altrimenti la inserisci da zero.'
+      : 'Salva le palestre, prenota prove gratuite e scrivi recensioni.';
+    $('#stepLbl').textContent = isGym ? 'Passo 1 di 2' : 'Passo 1 di 2';
+    $$('.gym-only').forEach(el => el.hidden = !isGym);
+    $('#nameLbl').textContent = isGym ? 'Il tuo nome e cognome' : 'Nome e cognome';
+
+    let role = 'titolare';
+    $$('#roleSeg button').forEach(b => b.onclick = () => { role = b.dataset.r; $$('#roleSeg button').forEach(x => x.classList.toggle('on', x === b)); });
+    $('#privacy').onclick = () => $('#privacy').classList.toggle('on');
+    $('#notif').onclick = () => $('#notif').classList.toggle('on');
+
+    const INTERESTS = ['Sala pesi', 'Powerlifting', 'Cardio', 'Corsi di gruppo', 'CrossFit', 'Calisthenics', 'Arti marziali', 'Yoga / Pilates', 'Nuoto', 'Personal trainer'];
+    $('#interests').innerHTML = INTERESTS.map(t => `<button class="chip">${t}</button>`).join('');
+    $$('#interests .chip').forEach(c => c.onclick = () => c.classList.toggle('on'));
+
+    let step = 1;
+    const setBtn = () => $('#next').innerHTML = step === 1
+      ? (isGym ? `Crea account e cerca la palestra ${ui('arrow', 18)}` : `Continua ${ui('arrow', 18)}`)
+      : `Inizia a esplorare ${ui('arrow', 18)}`;
+    setBtn();
+
+    function finishUser() {
+      setSession({ role: 'user', name: $('#f-name').value.trim() || 'Nuovo utente', email: $('#f-mail').value, since: 'ott 2026' });
+      location.href = 'profilo.html';
+    }
+    function validate() {
+      if (!$('#f-name').value.trim()) { toast('Inserisci il tuo nome'); $('#f-name').focus(); return false; }
+      if (!/\S+@\S+\.\S+/.test($('#f-mail').value)) { toast('Email non valida'); $('#f-mail').focus(); return false; }
+      if ($('#f-pw').value.length < 8) { toast('Password troppo corta'); $('#f-pw').focus(); return false; }
+      if (!$('#privacy').classList.contains('on')) { toast('Accetta i termini per continuare'); return false; }
+      return true;
+    }
+
+    $('#next').onclick = () => {
+      if (step === 1) {
+        if (!validate()) return;
+        if (isGym) {
+          setSession({ role: 'gym', name: $('#f-name').value.trim(), email: $('#f-mail').value, phone: $('#f-tel').value, gymRole: role, since: 'ott 2026' });
+          location.href = 'palestra-nuova.html';
+          return;
+        }
+        step = 2; $('#s1').hidden = true; $('#s2').hidden = false; $('.scroll').scrollTop = 0; setBtn();
+      } else finishUser();
+    };
+    $('#back2').onclick = () => { step = 1; $('#s2').hidden = true; $('#s1').hidden = false; setBtn(); };
+    $('#skip').onclick = finishUser;
+    // social = scorciatoia demo
+    [sApple, sGoogle].forEach(b => b.onclick = () => {
+      if (!$('#f-name').value) $('#f-name').value = isGym ? 'Laura Bianchi' : 'Alex Moretti';
+      if (!$('#f-mail').value) $('#f-mail').value = isGym ? 'laura@ironlab.it' : 'alex@email.it';
+      $('#f-pw').value = 'demo-password'; $('#privacy').classList.add('on');
+      if (isGym && !$('#f-tel').value) $('#f-tel').value = '+39 333 000 1122';
+      $('#next').click();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Apache: protezioni di base del sito
+Options -Indexes
+
+# Registro dei consensi, script e file nascosti mai serviti
+RedirectMatch 404 ^/(storage|scripts)(/|$)
+RedirectMatch 404 /\.(?!well-known)
+
+# Modalità manutenzione: tutte le richieste passano da maintenance/index.php,
+# che chiede la password (se attiva in maintenance/config.php) e poi serve il file.
+# Per tornare al sito servito direttamente da Apache, commenta queste tre righe.
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/maintenance/index\.php$
+RewriteRule ^ maintenance/index.php [L,QSA]
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), payment=()"
+</IfModule>

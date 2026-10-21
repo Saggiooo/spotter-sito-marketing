@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Profilo</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen">
+      <div class="scroll">
+        <div class="prof-head">
+          <span class="prof-av" id="av"></span>
+          <div style="flex:1;min-width:0"><h1 class="display" id="name"></h1><small id="meta"></small></div>
+          <button class="icon-btn" style="box-shadow:none" id="editBtn" aria-label="Modifica profilo"></button>
+        </div>
+        <div class="prof-stats" id="stats"></div>
+
+        <div class="sec">
+          <div class="sec-h"><h2 class="display">Prove prenotate</h2><span class="mono" id="bkN"></span></div>
+          <div class="stack" id="bookings" style="gap:8px"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-h"><h2 class="display">Le mie recensioni</h2><span class="mono">2</span></div>
+          <div id="myRv"></div>
+        </div>
+
+        <div class="sec">
+          <a class="cta-gym" href="registrati.html?tipo=palestra">
+            <span class="tt"><b>Hai una palestra?</b><small>Registrala o rivendicala: è gratis.</small></span>
+            <span class="go" id="ctaGo"></span>
+          </a>
+        </div>
+
+        <div class="sec">
+          <div class="sec-h"><h2 class="display">Impostazioni</h2></div>
+          <div class="menu" id="menu"></div>
+        </div>
+        <div style="height:120px"></div>
+      </div>
+      <nav id="tabbar"></nav>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    const ses = getSession();
+    if (!ses || ses.role === 'gym') { location.replace(ses ? 'gestione.html' : 'account.html'); throw new Error('redirect'); }
+    mountShell('account.html');
+
+    $('#av').textContent = initials(ses.name);
+    $('#name').textContent = ses.name;
+    $('#meta').textContent = `${ses.email || ''} · su Spotter da ${ses.since || 'oggi'}`;
+    $('#editBtn').innerHTML = ui('edit', 18);
+    $('#editBtn').onclick = () => toast('Modifica profilo in arrivo');
+    $('#ctaGo').innerHTML = ui('arrow', 18);
+
+    const bookings = store('spotter_bookings') || [];
+    $('#stats').innerHTML = [[getFavs().length, 'salvate'], [2, 'recensioni'], [bookings.length, 'prove']]
+      .map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('');
+
+    $('#bkN').textContent = bookings.length ? `${bookings.length}` : '';
+    $('#bookings').innerHTML = bookings.length ? bookings.map((b, i) => {
+      const g = GYMS.find(x => x.id === b.gym); if (!g) return '';
+      return `<div class="booking">
+        <img src="${photo(g.photos[0], 160)}" alt="">
+        <div><span class="when">${b.day} · ${b.slot}</span><b>${g.name}</b>
+          <div class="b-act"><a class="v" href="${mapsUrl(g)}" target="_blank" rel="noopener">${ui('nav', 14)} Indicazioni</a><button data-cancel="${i}">Annulla</button></div></div>
+      </div>`;
+    }).join('') : `<div class="notfound" style="text-align:left"><b>Nessuna prova in programma</b><p>Cerca una palestra con prova gratuita e prenota in 30 secondi.</p><a class="btn btn-ink btn-sm" href="index.html">${ui('map', 16)} Esplora la mappa</a></div>`;
+    $$('[data-cancel]').forEach(b => b.onclick = () => {
+      if (!confirm('Annullare la prova prenotata?')) return;
+      bookings.splice(+b.dataset.cancel, 1); store('spotter_bookings', bookings); location.reload();
+    });
+
+    const MY = [['ferro', 5, '3 settimane fa', 'Finalmente rack veri e manubri fino a 60. Staff competente.'], ['pulse', 4, '2 mesi fa', 'Comodissima perché sempre aperta. La sera un po\' piena.']];
+    $('#myRv').innerHTML = MY.map(([id, st, w, t]) => {
+      const g = GYMS.find(x => x.id === id);
+      return `<a class="my-rv" href="palestra.html?id=${id}" style="display:block"><div class="h"><b>${g.name}</b>${starsHtml(st, 12)}</div><p>${t}</p><span class="mono muted" style="display:block;margin-top:8px">${w}</span></a>`;
+    }).join('');
+
+    $('#menu').innerHTML = [
+      ['bell', 'Notifiche', 'Prove, nuove palestre vicine', 'switch'],
+      ['pin', 'Zona preferita', 'Milano'],
+      ['lock', 'Privacy e sicurezza', 'Password, dati, account'],
+      ['help', 'Aiuto e contatti', ''],
+    ].map(([i, t, s, x]) => `<button class="mrow" ${x ? 'data-sw' : ''}><span class="mi">${ui(i, 19)}</span><span class="tt">${t}${s ? `<small>${s}</small>` : ''}</span>${x ? '<span class="switch sm on"></span>' : ui('arrow', 16, 'arr')}</button>`).join('')
+      + `<button class="mrow danger" id="out"><span class="mi">${ui('logout', 19)}</span><span class="tt">Esci</span></button>`;
+    $$('[data-sw]').forEach(b => b.onclick = () => $('.switch', b).classList.toggle('on'));
+    $('#out').onclick = logout;
+  </script>
+</body>
+</html>

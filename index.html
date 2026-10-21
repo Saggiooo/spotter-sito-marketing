@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — La mappa delle palestre</title>
+  <meta name="description" content="Trova la palestra con gli attrezzi che ti servono. Attrezzi, prezzi, orari, prova gratuita e recensioni delle palestre, su una mappa.">
+  <meta name="theme-color" content="#121211">
+  <link rel="canonical" href="https://gymspotter.it/">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Spotter">
+  <meta property="og:locale" content="it_IT">
+  <meta property="og:url" content="https://gymspotter.it/">
+  <meta property="og:title" content="Spotter — La mappa delle palestre">
+  <meta property="og:description" content="Trova la palestra con gli attrezzi che ti servono. Prezzi, orari, prova gratuita e recensioni su una mappa.">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="preload" href="assets/fonts/archivo-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/instrument-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/fonts.css?v=1">
+  <link rel="stylesheet" href="assets/css/site.css?v=7">
+  <link rel="stylesheet" href="assets/css/consent.css?v=5">
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+  <div class="cursor" id="cursor"></div><div class="cursor-dot" id="cursorDot"></div>
+
+  <!-- NAV -->
+  <header class="nav" id="nav">
+    <a href="#top" class="brand"><span class="pin-dot"></span>SPOTTER</a>
+    <nav class="nav-links">
+      <a href="#filtro">Prova il filtro</a>
+      <a href="#dentro">L'app</a>
+      <a href="#come">Come funziona</a>
+      <a href="#palestre">Per le palestre</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a href="https://app.gymspotter.it/" class="btn btn-volt btn-sm cta" data-magnet>Apri l'app <span class="arr" data-ui="arrow"></span></a>
+    <button class="burger" id="burger" aria-label="Menu"><span></span></button>
+  </header>
+  <div class="mmenu" id="mmenu">
+    <a href="#filtro" class="dx">Il filtro</a>
+    <a href="#dentro" class="dx">L'app</a>
+    <a href="#come" class="dx">Come funziona</a>
+    <a href="#palestre" class="dx">Palestre</a>
+    <a href="#faq" class="dx">FAQ</a>
+    <span class="mono">Spotter · 2026</span>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero" id="top">
+    <div class="hero-bg"><div class="grid"></div><div class="glow"></div><div class="glow b"></div></div>
+    <div class="hero-copy">
+      <span class="eyebrow"><b>BETA</b> Partiamo da Bologna e Milano</span>
+      <h1 class="dx">
+        <span class="line"><span>Trova la</span></span>
+        <span class="line"><span>palestra con</span></span>
+        <span class="line"><span class="rot" id="rot"><span class="w">lo squat rack.</span></span></span>
+      </h1>
+      <p class="hero-sub">Attrezzi, prezzi, orari e prova gratuita di ogni palestra, su una mappa. Scegli quella giusta prima di pagare l'abbonamento.</p>
+      <div class="hero-ctas">
+        <a href="https://app.gymspotter.it/" class="btn btn-volt btn-lg" data-magnet>Apri la mappa <span class="arr" data-ui="arrow"></span></a>
+        <a href="#palestre" class="btn btn-ghost btn-lg" data-magnet>Ho una palestra</a>
+      </div>
+      <div class="hero-meta mono"><span><i></i>Gratis per chi si allena</span><span><i></i>Attrezzi, prezzi e orari</span><span><i></i>Web app · iOS e Android in arrivo</span></div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="phone" id="heroPhone">
+        <div class="scr"><iframe src="anteprima/index.html" title="Anteprima app Spotter" tabindex="-1" loading="eager"></iframe></div>
+        <div class="shine"></div>
+      </div>
+      <div class="float f-pin" data-depth="40"><div><span data-ui="bolt"></span>€45</div></div>
+      <div class="float f-kg" data-depth="-30"><div><span class="ki" data-eq="manubri"></span><span><small>Manubri</small><b>2–60 kg</b></span></div></div>
+      <div class="float f-ticket" data-depth="25"><div><span class="ti" data-ui="ticket"></span><span><b>Prova gratuita</b><small>Richiedila dall'app</small></span></div></div>
+      <div class="float f-star" data-depth="-45"><div><span data-ui="star"></span>Recensioni di chi ci si allena</div></div>
+    </div>
+    <div class="scroll-hint mono"><span>Scorri</span><i></i></div>
+  </section>
+
+  <!-- MARQUEE -->
+  <section class="marquee" aria-hidden="true">
+    <div class="band v"><div class="track" id="band1" style="--dur:50s"></div></div>
+    <div class="band p"><div class="track" id="band2" style="--dur:60s"></div></div>
+  </section>
+
+  <!-- MANIFESTO -->
+  <section class="manifesto">
+    <span class="mono">Il problema</span>
+    <p class="scrub" id="scrub">Hai pagato un anno di abbonamento. Poi hai scoperto che lo [squat rack] era uno solo. Per [trecento persone]. Alle sette di sera.</p>
+  </section>
+
+  <!-- FILTRO INTERATTIVO -->
+  <section class="filter-sec" id="filtro">
+    <div class="fs-wrap">
+      <div class="fs-head">
+        <span class="mono muted rv">Provalo adesso · palestre di esempio</span>
+        <h2 class="dx rv">Cerca quello che ti serve</h2>
+        <p class="rv">Tocca gli attrezzi che non puoi saltare. Spotter ti mostra solo le palestre che li hanno tutti.</p>
+        <div class="pick-grid" id="pick"></div>
+        <div class="kg-slider rv">
+          <div class="kg-top"><b>Manubri fino ad almeno</b><span class="v" id="kgV">Tutti</span></div>
+          <input type="range" id="kg" min="0" max="60" step="10" value="0" aria-label="Peso massimo manubri">
+        </div>
+      </div>
+      <div class="result rv" id="result">
+        <span class="mono">Risultato</span>
+        <div class="count"><span class="n" id="count">10</span><span class="l" id="countL">palestre di esempio<br>hanno tutto questo</span></div>
+        <div class="res-list" id="resList"></div>
+        <div class="res-more"><span id="resMore"></span><a href="https://app.gymspotter.it/cerca" class="btn btn-volt btn-xs" data-magnet>Apri i filtri <span class="arr" data-ui="arrow"></span></a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DENTRO L'APP -->
+  <section class="inside" id="dentro">
+    <div class="sticky">
+      <div class="bigword dx" id="bigword">Dentro l'app · Dentro l'app ·</div>
+      <div class="inside-head">
+        <div><span class="mono">Anteprima dell'app · tocca e prova</span><h2 class="dx">Esplora tutte<br><span class="volt">le informazioni.</span></h2></div>
+      </div>
+      <div class="h-track" id="htrack">
+        <article class="screen-card">
+          <div class="phone"><div class="scr"><iframe data-src="anteprima/palestra.html?id=ferro" title="Pagina palestra" loading="lazy"></iframe></div><div class="shine"></div></div>
+          <div class="sc-copy"><span class="num dx outline">01</span><h3 class="dx">La scheda</h3><p>Foto, orari, prezzi e prova gratuita. E soprattutto l'elenco degli attrezzi, con quantità e range dei pesi.</p><div class="tags"><span>Attrezzi</span><span>Prezzi</span><span>Orari</span><span>Corsi</span></div></div>
+        </article>
+        <article class="screen-card">
+          <div class="phone"><div class="scr"><iframe data-src="anteprima/cerca.html" title="Filtri" loading="lazy"></iframe></div><div class="shine"></div></div>
+          <div class="sc-copy"><span class="num dx outline">02</span><h3 class="dx">I filtri</h3><p>Squat rack, leg press, manubri fino a 50 kg, sotto i 40 € al mese, aperta adesso. Combina tutto quello che ti serve.</p><div class="tags"><span>Attrezzi</span><span>Prezzo</span><span>24/7</span><span>Spazi donne</span></div></div>
+        </article>
+        <article class="screen-card">
+          <div class="phone"><div class="scr"><iframe data-src="anteprima/salvate.html" title="Salvate" loading="lazy"></iframe></div><div class="shine"></div></div>
+          <div class="sc-copy"><span class="num dx outline">03</span><h3 class="dx">Le salvate</h3><p>Metti da parte le palestre che ti convincono e ritrovale quando vuoi. Poi richiedi la prova gratuita.</p><div class="tags"><span>Preferiti</span><span>Vicino a te</span></div></div>
+        </article>
+        <article class="screen-card">
+          <div class="phone"><div class="scr"><iframe data-src="anteprima/account.html" title="Account" loading="lazy"></iframe></div><div class="shine"></div></div>
+          <div class="sc-copy"><span class="num dx outline">04</span><h3 class="dx">Due account</h3><p>Chi si allena salva, richiede prove e recensisce. Chi ha una palestra la rivendica o ce la segnala: il nostro staff verifica e pubblica la scheda.</p><div class="tags"><span>Utenti</span><span>Palestre</span></div></div>
+        </article>
+      </div>
+      <div class="h-progress"><i id="hbar"></i></div>
+    </div>
+  </section>
+
+  <!-- COME FUNZIONA -->
+  <section class="how" id="come">
+    <div class="how-head">
+      <div><span class="mono">Come funziona</span><h2 class="dx rv">Dalla mappa<br>alla prova.</h2></div>
+    </div>
+    <div class="steps">
+      <article class="step rv">
+        <div class="art"><div class="mini-search"><span data-ui="search"></span><span class="typed" id="typed"></span><span class="caret"></span></div></div>
+        <span class="big dx">1</span>
+        <h3 class="dx">Cerca</h3>
+        <p>Apri la mappa o scrivi una zona. Vedi subito ogni palestra con il suo prezzo sul pin.</p>
+      </article>
+      <article class="step rv" style="--d:.1s">
+        <div class="art"><div class="mini-chips"><span class="on" data-chip>Squat rack</span><span data-chip>Sotto €40</span><span class="on" data-chip>Prova gratuita</span><span data-chip>Aperto ora</span></div></div>
+        <span class="big dx">2</span>
+        <h3 class="dx">Confronta</h3>
+        <p>Filtra per attrezzi, prezzo, orari e servizi. Leggi le recensioni di chi ci si allena davvero.</p>
+      </article>
+      <article class="step rv" style="--d:.2s">
+        <div class="art"><div class="mini-ticket"><span class="mono">Ferro Club</span><b>Prova gratuita</b><span class="ok"><i data-ui="check"></i>Richiesta inviata</span></div></div>
+        <span class="big dx">3</span>
+        <h3 class="dx">Provala</h3>
+        <p>Richiedi la prova gratuita dall'app, oppure contatta la palestra. Le indicazioni le apri con un tocco.</p>
+      </article>
+    </div>
+  </section>
+
+
+  <!-- PER LE PALESTRE -->
+  <section class="gyms" id="palestre">
+    <div class="gyms-wrap">
+      <div>
+        <span class="mono">Per le palestre</span>
+        <h2 class="dx rv">Fatti <em>trovare</em> da chi ti cerca.</h2>
+        <p class="lead rv">Chi apre Spotter sa già cosa vuole. Mostragli i tuoi attrezzi, i prezzi e la prova gratuita: arriva in palestra già convinto.</p>
+        <ul class="checks">
+          <li class="rv"><i data-ui="check"></i>Sulla mappa gratis con orari, prezzi, servizi e attrezzi</li>
+          <li class="rv" style="--d:.06s"><i data-ui="check"></i>Più foto, marche degli attrezzi e contatti diretti dal piano PLUS</li>
+          <li class="rv" style="--d:.12s"><i data-ui="check"></i>Priorità nei risultati e pin con il fulmine dal piano ADVANCE</li>
+          <li class="rv" style="--d:.18s"><i data-ui="check"></i>Già sulla mappa? Rivendicala: la verifichiamo e la colleghiamo al tuo account</li>
+        </ul>
+        <a href="https://app.gymspotter.it/registrati?tipo=palestra" class="btn btn-ink btn-lg rv" data-magnet>Registra la tua palestra <span class="arr" data-ui="arrow"></span></a>
+      </div>
+      <div class="dash rv" id="dash">
+        <div class="dash-top"><img id="dashImg" alt=""><span><b>Ferro Club</b><span class="st">In evidenza</span></span><span class="plan">⚡ ADVANCE</span></div>
+        <div class="dash-k"><div><span>Foto e video</span><b>20 + 1</b></div><div><span>Nei risultati</span><b>Priorità</b></div></div>
+        <div class="dash-eq" id="dashEq"></div>
+        <div class="dash-req"><span class="av">MR</span><span class="tt"><b>Marco R.</b><small>Head coach · staff della palestra</small></span><span class="y" data-ui="users"></span></div>
+        <span class="dash-note">Esempio · scheda ADVANCE</span>
+      </div>
+    </div>
+    <div class="plans">
+      <div class="pl rv"><h4 class="dx">Free</h4><div class="pp">€0<small> /mese</small></div><p>Esserci, gratis.</p><ul><li>Fino a 3 foto della palestra</li><li>Orari, prezzi, servizi e sito web</li><li>Attrezzi senza foto e marca</li></ul></div>
+      <div class="pl rv" style="--d:.06s"><h4 class="dx">Plus</h4><div class="pp">€7<span class="c">,99</span><small> /mese</small></div><p>Tutto Free, più:</p><ul><li>Fino a 20 foto tra palestra e attrezzi e un video</li><li>Marche degli attrezzi</li><li>Telefono, WhatsApp ed email</li></ul></div>
+      <div class="pl pro rv" style="--d:.12s"><span class="rib">⚡ IN EVIDENZA</span><h4 class="dx">Advance</h4><div class="pp">€18<span class="c">,99</span><small> /mese</small></div><p>Tutto Plus, più:</p><ul><li>Priorità nei risultati e pin con fulmine</li><li>Staff con foto, nome e ruolo</li></ul></div>
+      <div class="pl rv" style="--d:.18s"><h4 class="dx">Max</h4><div class="pp">€48<span class="c">,99</span><small> /mese</small></div><p>Tutto Advance, più:</p><ul><li>Prima degli Advance nei risultati</li><li>Applicazione gestionale</li></ul></div>
+    </div>
+    <p class="plans-note">Prezzi mensili. Il piano si attiva su richiesta, con il supporto del nostro staff.</p>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <div class="faq-wrap">
+      <div><span class="mono muted">Domande</span><h2 class="dx rv">Altre<br>domande?</h2></div>
+      <div id="qas"></div>
+    </div>
+  </section>
+
+  <!-- CTA FINALE -->
+  <section class="final">
+    <div class="glow"></div>
+    <div class="final-in">
+      <span class="mono volt">Pronto?</span>
+      <h2 class="dx rv">La tua prossima palestra è <span class="volt">già sulla mappa.</span></h2>
+      <p class="rv">Apri Spotter dal browser, adesso. Le app per iPhone e Android arriveranno più avanti.</p>
+      <div class="ctas rv"><a href="https://app.gymspotter.it/" class="btn btn-volt btn-lg" data-magnet>Apri la web app <span class="arr" data-ui="arrow"></span></a></div>
+      <div class="stores rv"><span class="store"><span data-ui="apple"></span><span>Presto su<b>App Store</b></span></span><span class="store"><span data-ui="play"></span><span>Presto su<b>Google Play</b></span></span></div>
+    </div>
+    <div class="mega" id="mega" aria-label="Spotter"></div>
+    <footer class="foot">
+      <span>© 2026 Spotter · Simone Saggese</span>
+      <nav><a href="https://app.gymspotter.it/">Web app</a><a href="#palestre">Per le palestre</a><a href="#faq">FAQ</a><a href="/privacy-policy">Privacy</a><a href="/cookie-policy">Cookie</a><a href="/terms">Termini</a><button type="button" class="foot-btn" data-consent-open>Preferenze cookie</button></nav>
+    </footer>
+  </section>
+
+  <script src="assets/js/data.js?v=1"></script>
+  <script src="assets/js/icons.js?v=1"></script>
+  <script src="assets/js/site.js?v=2"></script>
+  <script src="assets/js/consent.js?v=2" defer></script>
+</body>
+</html>

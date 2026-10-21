@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spotter — Inserisci palestra</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="../assets/css/anteprima.css?v=1">
+</head>
+<body>
+  <div class="device">
+    <div class="screen">
+      <header class="wz-head">
+        <div class="wz-row">
+          <button class="icon-btn" id="wzBack" aria-label="Indietro"></button>
+          <span class="tt"><small class="mono" id="wzStep"></small><b id="wzTitle"></b></span>
+          <button class="wz-save" id="wzSave">Salva ed esci</button>
+        </div>
+        <div class="wz-bar" id="wzBar"></div>
+      </header>
+
+      <div class="scroll" id="scroll">
+        <div class="wz-body">
+
+          <!-- 0 · CERCA -->
+          <section class="wz-step" data-s="0">
+            <h2 class="display">La tua palestra è già su Spotter?</h2>
+            <p class="lead">Molte palestre sono già sulla mappa. Cercala: se c'è, la rivendichi in 2 minuti.</p>
+            <label class="search-input" style="box-shadow:inset 0 0 0 1.5px var(--ink)"><span data-ui="search"></span><input id="q0" type="search" placeholder="Nome palestra o indirizzo" autocomplete="off"></label>
+            <div class="found" id="found"></div>
+            <div class="notfound">
+              <b>Non la trovi?</b>
+              <p>Aggiungila da zero: nome, indirizzo, attrezzi, prezzi e foto.</p>
+              <button class="btn btn-ink" id="addNew"></button>
+            </div>
+          </section>
+
+          <!-- 1 · INFO -->
+          <section class="wz-step" data-s="1">
+            <h2 class="display">Com'è la tua palestra?</h2>
+            <div class="field"><label for="f-name">Nome della palestra</label><input class="inp" id="f-name" data-k="name" placeholder="Es. Iron Lab"></div>
+            <div class="field"><label>Tipo di palestra</label><div class="chips-wrap" id="types"></div></div>
+            <div class="field"><label for="f-desc">Descrizione <span class="muted" id="descN">0/280</span></label><textarea class="inp" id="f-desc" data-k="desc" maxlength="280" placeholder="Cosa vi rende diversi? Atmosfera, specialità, coach…"></textarea></div>
+          </section>
+
+          <!-- 2 · POSIZIONE -->
+          <section class="wz-step" data-s="2">
+            <h2 class="display">Dove si trova?</h2>
+            <div class="field"><label for="f-addr">Indirizzo</label><div class="inp-pre"><span data-ui="pin"></span><input class="inp" id="f-addr" data-k="address" placeholder="Via, civico, città"></div></div>
+            <button class="btn btn-ghost" id="geo"></button>
+            <div class="wz-map" id="wzMap"></div>
+            <p class="hint mono" style="margin:-6px 4px 0;color:var(--mute)" id="coords"></p>
+            <div class="field"><label for="f-area">Zona / quartiere <span class="muted">appare sotto il nome</span></label><input class="inp" id="f-area" data-k="area" placeholder="Es. Navigli"></div>
+          </section>
+
+          <!-- 3 · CONTATTI -->
+          <section class="wz-step" data-s="3">
+            <h2 class="display">Come ti contattano?</h2>
+            <p class="lead">Questi pulsanti appariranno in alto nella tua pagina. Lascia vuoto quello che non usi.</p>
+            <div class="contact-prev" id="cprev"></div>
+            <div class="field"><label for="f-phone">Telefono <span class="muted">pulsante “Chiama”</span></label><div class="inp-pre"><span data-ui="phone"></span><input class="inp" id="f-phone" data-k="phone" type="tel" placeholder="+39 02 …"></div></div>
+            <div class="field"><label for="f-wa">WhatsApp <span class="muted">pulsante “WhatsApp”</span></label><div class="inp-pre"><span data-ui="whatsapp"></span><input class="inp" id="f-wa" data-k="whatsapp" type="tel" placeholder="+39 3…"></div></div>
+            <button class="check-row" id="sameWa"><span class="cbox" data-ui="check"></span><span>Il numero WhatsApp è lo stesso del telefono</span></button>
+            <div class="field"><label for="f-site">Sito web <span class="muted">pulsante “Sito”</span></label><div class="inp-pre"><span>https://</span><input class="inp" id="f-site" data-k="site" placeholder="miapalestra.it"></div></div>
+            <div class="row2">
+              <div class="field"><label for="f-mail">Email</label><input class="inp" id="f-mail" data-k="email" type="email" placeholder="info@…"></div>
+              <div class="field"><label for="f-ig">Instagram</label><div class="inp-pre"><span>@</span><input class="inp" id="f-ig" data-k="ig" placeholder="account"></div></div>
+            </div>
+          </section>
+
+          <!-- 4 · ORARI & ACCESSO -->
+          <section class="wz-step" data-s="4">
+            <h2 class="display">Orari e accesso</h2>
+            <div class="card-box">
+              <div class="toggle-row" id="t24"><span class="ti" data-ui="clock"></span><span class="tt"><b>Aperta 24/7</b><small>Accesso a qualsiasi ora, tutti i giorni</small></span><span class="switch"></span></div>
+            </div>
+            <div class="card-box" id="hoursBox"><div id="hours"></div></div>
+            <button class="btn btn-ghost btn-sm" id="copyH" style="align-self:flex-start;height:38px"></button>
+
+            <div class="card-box pad stack" style="gap:12px">
+              <div class="toggle-row" id="tTrial" style="padding:0"><span class="ti" data-ui="ticket"></span><span class="tt"><b>Prova gratuita</b><small>Gli utenti possono prenotarla dall'app</small></span><span class="switch"></span></div>
+              <div class="field" id="trialF"><label>Cosa offri?</label><div class="chips-wrap" id="trialOpts"></div><input class="inp" id="f-trial" placeholder="Oppure scrivi tu, es. 2 lezioni gratis"></div>
+            </div>
+
+            <div class="field"><label>Divisione di genere</label>
+              <div class="opt-grid" id="gender"></div>
+            </div>
+          </section>
+
+          <!-- 5 · ATTREZZI -->
+          <section class="wz-step" data-s="5">
+            <h2 class="display">Che attrezzi avete?</h2>
+            <p class="lead">Tocca per selezionare, poi indica quanti. È la parte che gli utenti filtrano di più.</p>
+            <label class="search-input" style="box-shadow:inset 0 0 0 1px var(--line)"><span data-ui="search"></span><input id="eqQ" type="search" placeholder="Cerca attrezzo…"></label>
+            <div class="cat-tabs hscroll" id="eqCats" style="margin-bottom:0"></div>
+            <div class="eqw" id="eqGrid"></div>
+          </section>
+
+          <!-- 6 · SERVIZI -->
+          <section class="wz-step" data-s="6">
+            <h2 class="display">Servizi</h2>
+            <p class="lead">Cosa trova chi entra?</p>
+            <div class="chips-wrap" id="amen"></div>
+          </section>
+
+          <!-- 7 · PREZZI -->
+          <section class="wz-step" data-s="7">
+            <h2 class="display">Abbonamenti e prezzi</h2>
+            <p class="lead">Il prezzo mensile più basso appare sul pin della mappa.</p>
+            <div class="stack" id="plans" style="gap:10px"></div>
+            <button class="add-row" id="addPlan"></button>
+            <div class="field"><label for="f-signup">Quota d'iscrizione <span class="muted">una tantum</span></label><div class="inp-pre"><span>€</span><input class="inp" id="f-signup" data-k="signup" type="number" min="0" placeholder="0"></div></div>
+          </section>
+
+          <!-- 8 · FOTO -->
+          <section class="wz-step" data-s="8">
+            <h2 class="display">Foto</h2>
+            <p class="lead">Almeno 3: la sala, gli attrezzi, gli spogliatoi. La prima è la copertina.</p>
+            <div class="ph-grid" id="photos"></div>
+          </section>
+
+          <!-- 9 · RIEPILOGO -->
+          <section class="wz-step" data-s="9">
+            <h2 class="display">Tutto pronto?</h2>
+            <p class="lead">Così appare la tua palestra sulla mappa.</p>
+            <div id="pvCard"></div>
+            <div class="card-box"><div class="sum-list" id="sum"></div></div>
+            <button class="check-row" id="confirm"><span class="cbox" data-ui="check"></span><span>Dichiaro di essere titolare o autorizzato a gestire questa palestra. Le informazioni sono corrette.</span></button>
+          </section>
+        </div>
+      </div>
+
+      <div class="wz-foot" id="foot">
+        <button class="btn btn-ghost" id="prev" aria-label="Indietro"></button>
+        <button class="btn btn-ink" id="next"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/vendor/leaflet/leaflet.js"></script>
+  <script src="../assets/js/data.js?v=1"></script>
+  <script src="../assets/js/icons.js?v=1"></script>
+  <script src="../assets/js/anteprima.js?v=1"></script>
+  <script>
+    const ses = getSession();
+    if (!ses || ses.role !== 'gym') { location.replace('registrati.html?tipo=palestra'); throw new Error('redirect'); }
+    const params = new URLSearchParams(location.search);
+    const editStep = params.get('edit') ? +params.get('edit') : null;
+    const existing = getMyGym();
+    if (!editStep && existing && existing._status !== 'bozza') { location.replace('gestione.html'); throw new Error('redirect'); }
+    mountShell('palestra-nuova.html');
+    $$('[data-ui]').forEach(el => el.innerHTML = ui(el.dataset.ui, el.classList.contains('cbox') ? 14 : 20));
+
+    const STEPS = ['Cerca', 'Info', 'Posizione', 'Contatti', 'Orari e accesso', 'Attrezzi', 'Servizi', 'Prezzi', 'Foto', 'Riepilogo'];
+    const g = existing ? JSON.parse(JSON.stringify(existing)) : {
+      id: 'mia-' + Date.now().toString(36), name: '', type: 'Palestra', desc: '', address: '', area: '',
+      lat: 45.4642, lng: 9.19, phone: '', whatsapp: '', site: '', email: '', ig: '',
+      hours: { wk: ['07:00', '22:00'], sat: ['09:00', '19:00'], sun: null }, trial: '', gender: 'mista',
+      equipment: [], amenities: [], plans: [{ name: 'Mensile', price: '', period: 'mese' }], signup: '', photos: [],
+      rating: 0, reviews: 0, price: 0, featured: false, verified: false, tags: [], _status: 'bozza', _plan: 'base',
+    };
+    let step = editStep ?? (existing ? 1 : 0);
+    const save = () => { g.price = minMonthly(); setMyGym(g); };
+    const minMonthly = () => {
+      const m = g.plans.filter(p => p.price && p.period === 'mese').map(p => +p.price);
+      return m.length ? Math.min(...m) : (g.plans.find(p => p.price) || {}).price || 0;
+    };
+
+    /* ---------- campi semplici ---------- */
+    $$('[data-k]').forEach(el => {
+      el.value = g[el.dataset.k] ?? '';
+      el.addEventListener('input', () => { g[el.dataset.k] = el.type === 'number' ? +el.value : el.value; onChange(); });
+    });
+    const descN = () => $('#descN').textContent = `${(g.desc || '').length}/280`;
+    $('#f-desc').addEventListener('input', descN); descN();
+
+    /* ---------- 0 · ricerca ---------- */
+    $('#addNew').innerHTML = `${ui('plus', 18)} Aggiungi la mia palestra`;
+    function renderFound() {
+      const q = $('#q0').value.trim().toLowerCase();
+      const res = q ? GYMS.filter(x => (x.name + ' ' + x.address + ' ' + x.area).toLowerCase().includes(q)).slice(0, 5) : [];
+      $('#found').innerHTML = !q ? '' : res.length ? `<span class="mono muted" style="margin:4px 4px 0">${res.length} risultati</span>` + res.map(x => `
+        <a class="found-row" href="rivendica.html?id=${x.id}">
+          <img src="${photo(x.photos[0], 120)}" alt="">
+          <span><b>${x.name}</b><small>${x.address}</small>${x.verified ? '<span class="claimed">· già gestita da un titolare</span>' : ''}</span>
+          <span class="btn btn-volt btn-sm" style="height:34px;padding:0 12px;font-size:13px">${x.verified ? 'Segnala' : 'È mia'}</span>
+        </a>`).join('') : `<p class="hint" style="margin:0 4px;font-size:13.5px">Nessuna palestra trovata per “${$('#q0').value}”.</p>`;
+    }
+    $('#q0').oninput = renderFound;
+    $('#addNew').onclick = () => { if (!g.name && $('#q0').value.trim()) { g.name = $('#q0').value.trim(); $('#f-name').value = g.name; } go(1); };
+
+    /* ---------- 1 · tipo ---------- */
+    $('#types').innerHTML = GYM_TYPES.map(t => `<button class="chip ${g.type === t ? 'on' : ''}" data-t="${t}">${t}</button>`).join('');
+    $$('#types .chip').forEach(b => b.onclick = () => { g.type = b.dataset.t; $$('#types .chip').forEach(x => x.classList.toggle('on', x === b)); onChange(); });
+
+    /* ---------- 2 · mappa ---------- */
+    let map, pin;
+    $('#geo').innerHTML = `${ui('locate', 18)} Trova sulla mappa`;
+    const setCoords = () => $('#coords').textContent = `${g.lat.toFixed(5)}, ${g.lng.toFixed(5)} · trascina il pin per correggere`;
+    function initMap() {
+      if (map) { map.invalidateSize(); return; }
+      map = L.map('wzMap', { zoomControl: false, attributionControl: false }).setView([g.lat, g.lng], 15);
+      addTiles(map);
+      pin = L.marker([g.lat, g.lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div class="drag-pin"></div>', iconSize: [0, 0] }) }).addTo(map);
+      pin.on('dragend', () => { const p = pin.getLatLng(); g.lat = p.lat; g.lng = p.lng; setCoords(); onChange(); });
+      map.on('click', e => { pin.setLatLng(e.latlng); g.lat = e.latlng.lat; g.lng = e.latlng.lng; setCoords(); onChange(); });
+      setCoords();
+    }
+    // geocoding finto: in produzione Google Places Autocomplete / Geocoding API
+    $('#geo').onclick = () => {
+      if (!g.address.trim()) { toast('Scrivi prima l\'indirizzo'); $('#f-addr').focus(); return; }
+      let h = 0; for (const c of g.address) h = (h * 31 + c.charCodeAt(0)) % 9973;
+      g.lat = USER_POS[0] + ((h % 100) - 50) / 3000; g.lng = USER_POS[1] + (((h / 100) | 0) % 100 - 50) / 2000;
+      pin.setLatLng([g.lat, g.lng]); map.flyTo([g.lat, g.lng], 16, { duration: .6 }); setCoords(); onChange();
+      toast('Indirizzo trovato');
+    };
+
+    /* ---------- 3 · contatti ---------- */
+    function renderCPrev() {
+      const items = [['nav', 'Indicazioni', true, true], ['phone', 'Chiama', !!g.phone], ['whatsapp', 'WhatsApp', !!g.whatsapp], ['globe', 'Sito', !!g.site]];
+      $('#cprev').innerHTML = items.map(([i, l, on, p]) => `<span class="act ${p ? 'primary' : ''} ${on ? '' : 'off'}">${ui(i, 20)}${l}</span>`).join('');
+    }
+    $('#sameWa').onclick = () => {
+      const on = !$('#sameWa').classList.contains('on');
+      $('#sameWa').classList.toggle('on', on);
+      if (on) { g.whatsapp = g.phone; $('#f-wa').value = g.phone; }
+      $('#f-wa').disabled = on; onChange();
+    };
+    $('#f-phone').addEventListener('input', () => { if ($('#sameWa').classList.contains('on')) { g.whatsapp = g.phone; $('#f-wa').value = g.phone; } });
+
+    /* ---------- 4 · orari, prova, genere ---------- */
+    const DAYS = [['Lun', 'wk'], ['Mar', 'wk'], ['Mer', 'wk'], ['Gio', 'wk'], ['Ven', 'wk'], ['Sab', 'sat'], ['Dom', 'sun']];
+    let is24 = g.hours === '24h';
+    let H = is24 ? DAYS.map((_, i) => i < 5 ? ['07:00', '22:00'] : i === 5 ? ['09:00', '19:00'] : null) : DAYS.map(([, k]) => g.hours[k] ? [...g.hours[k]] : null);
+    $('#copyH').innerHTML = `${ui('check', 16)} Copia lunedì su tutti i feriali`;
+    function renderHours() {
+      $('#t24 .switch').classList.toggle('on', is24);
+      $('#hoursBox').hidden = $('#copyH').hidden = is24;
+      $('#hours').innerHTML = DAYS.map(([d], i) => `
+        <div class="hr ${H[i] ? '' : 'closed'}" data-i="${i}"><span class="d">${d}</span><button class="switch sm ${H[i] ? 'on' : ''}" aria-label="Aperto ${d}"></button>
+        <span class="times">${H[i] ? `<input type="time" value="${H[i][0]}" data-x="0"><span class="muted">–</span><input type="time" value="${H[i][1]}" data-x="1">` : '<span style="font-size:13px;color:var(--mute)">Chiuso</span>'}</span></div>`).join('');
+      $$('#hours .hr').forEach(r => {
+        const i = +r.dataset.i;
+        $('.switch', r).onclick = () => { H[i] = H[i] ? null : ['09:00', '20:00']; renderHours(); syncH(); };
+        $$('input', r).forEach(inp => inp.onchange = () => { H[i][+inp.dataset.x] = inp.value; syncH(); });
+      });
+    }
+    const syncH = () => { g.hours = is24 ? '24h' : { wk: H[0], sat: H[5], sun: H[6] }; onChange(); };
+    $('#t24').onclick = () => { is24 = !is24; renderHours(); syncH(); };
+    $('#copyH').onclick = () => { for (let i = 1; i < 5; i++) H[i] = H[0] ? [...H[0]] : null; renderHours(); syncH(); toast('Orari copiati'); };
+
+    const TRIALS = ['1 giorno gratis', '3 giorni gratis', '7 giorni gratis', 'Prima lezione gratis'];
+    let trialOn = !!g.trial;
+    function renderTrial() {
+      $('#tTrial .switch').classList.toggle('on', trialOn);
+      $('#trialF').hidden = !trialOn;
+      $('#trialOpts').innerHTML = TRIALS.map(t => `<button class="chip ${g.trial === t ? 'on' : ''}">${t}</button>`).join('');
+      $$('#trialOpts .chip').forEach(c => c.onclick = () => { g.trial = c.textContent; $('#f-trial').value = ''; renderTrial(); onChange(); });
+    }
+    $('#tTrial').onclick = () => { trialOn = !trialOn; g.trial = trialOn ? (g.trial || TRIALS[2]) : ''; renderTrial(); onChange(); };
+    $('#f-trial').oninput = e => { g.trial = e.target.value; $$('#trialOpts .chip').forEach(c => c.classList.remove('on')); onChange(); };
+    if (g.trial && !TRIALS.includes(g.trial)) $('#f-trial').value = g.trial;
+
+    const GDESC = { 'mista': 'Uno spazio unico per tutti', 'area-donne': 'Sala comune + una zona solo donne', 'solo-donne': 'Palestra riservata alle donne', 'orari-separati': 'Fasce orarie dedicate' };
+    function renderGender() {
+      $('#gender').innerHTML = Object.entries(GENDER).map(([k, l]) => `<button class="opt ${(g.gender || 'mista') === k ? 'on' : ''}" data-g="${k}"><b>${l}</b><small>${GDESC[k]}</small></button>`).join('');
+      $$('#gender .opt').forEach(b => b.onclick = () => { g.gender = b.dataset.g; renderGender(); onChange(); });
+    }
+
+    /* ---------- 5 · attrezzi ---------- */
+    let eqCat = 'tutti';
+    function renderEq() {
+      const has = id => g.equipment.find(e => e[0] === id);
+      $('#eqCats').innerHTML = [['tutti', 'Tutti'], ['sel', `Selezionati · ${g.equipment.length}`], ...Object.entries(EQUIP_CATS)]
+        .map(([k, l]) => `<button class="${eqCat === k ? 'on' : ''}" data-k="${k}">${l}</button>`).join('');
+      $$('#eqCats button').forEach(b => b.onclick = () => { eqCat = b.dataset.k; renderEq(); });
+      const q = $('#eqQ').value.toLowerCase();
+      const ids = Object.keys(EQUIP).filter(id => (eqCat === 'tutti' || (eqCat === 'sel' ? has(id) : EQUIP[id].cat === eqCat)) && (!q || EQUIP[id].name.toLowerCase().includes(q)));
+      $('#eqGrid').innerHTML = ids.map(id => {
+        const e = has(id);
+        return `<div class="eq-pick ${e ? 'on' : ''} ${e && EQUIP[id].range && !e[3] ? 'need-kg' : ''}" data-id="${id}" role="button">
+          <span class="ck">${ui('check', 12)}</span>${eqIcon(id, 34)}<span>${EQUIP[id].name}</span>
+          <div class="ctrl">
+            <div class="mini-step"><button data-d="-1" aria-label="Meno">${ui('minus', 14)}</button><span>${e ? e[1] : 1}</span><button data-d="1" aria-label="Più">${ui('plus', 14)}</button></div>
+            ${EQUIP[id].range ? `<div class="kgw"><input type="number" min="0" step="0.5" placeholder="da" data-r="0" value="${e && e[3] ? e[3][0] : ''}">–<input type="number" min="0" step="0.5" placeholder="a" data-r="1" value="${e && e[3] ? e[3][1] : ''}">kg</div>` : ''}
+          </div></div>`;
+      }).join('') || `<p class="hint" style="grid-column:1/-1">Nessun attrezzo trovato.</p>`;
+      $$('#eqGrid .eq-pick').forEach(t => {
+        const id = t.dataset.id;
+        t.onclick = ev => {
+          if (ev.target.closest('.ctrl')) return;
+          const i = g.equipment.findIndex(x => x[0] === id);
+          i >= 0 ? g.equipment.splice(i, 1) : g.equipment.push([id, 1]);
+          renderEq(); onChange();
+        };
+        $$('.mini-step button', t).forEach(b => b.onclick = () => {
+          const e = has(id); e[1] = Math.max(1, e[1] + +b.dataset.d); $('.mini-step span', t).textContent = e[1]; onChange();
+        });
+        $$('.kgw input', t).forEach(inp => inp.oninput = () => {
+          const e = has(id); const [a, b] = $$('.kgw input', t).map(x => x.value === '' ? null : +x.value);
+          e[3] = a != null && b != null ? [Math.min(a, b), Math.max(a, b)] : null;
+          t.classList.toggle('need-kg', !e[3]); onChange();
+        });
+      });
+    }
+    $('#eqQ').oninput = renderEq;
+
+    /* ---------- 6 · servizi ---------- */
+    function renderAm() {
+      $('#amen').innerHTML = Object.entries(AMENITIES).filter(([k]) => k !== 'h24').map(([k, l]) =>
+        `<button class="chip ${g.amenities.includes(k) ? 'on' : ''}" data-a="${k}">${amIcon(k, 18)}${l}</button>`).join('');
+      $$('#amen .chip').forEach(b => b.onclick = () => {
+        const i = g.amenities.indexOf(b.dataset.a); i >= 0 ? g.amenities.splice(i, 1) : g.amenities.push(b.dataset.a);
+        b.classList.toggle('on'); onChange();
+      });
+    }
+
+    /* ---------- 7 · prezzi ---------- */
+    const PERIODS = ['mese', '3 mesi', '6 mesi', 'anno', 'ingresso', 'lezione', '10 ingressi'];
+    $('#addPlan').innerHTML = `${ui('plus', 18)} Aggiungi abbonamento`;
+    function renderPlans() {
+      $('#plans').innerHTML = g.plans.map((p, i) => `
+        <div class="plan-row" data-i="${i}">
+          <input class="inp" data-f="name" value="${p.name || ''}" placeholder="Nome (es. Mensile)">
+          <div class="inp-pre"><span>€</span><input class="inp" data-f="price" type="number" min="0" value="${p.price ?? ''}" placeholder="0"></div>
+          <select class="inp full" data-f="period">${PERIODS.map(x => `<option ${p.period === x ? 'selected' : ''}>${x}</option>`).join('')}</select>
+          <input class="inp full" data-f="perks" value="${(p.perks || []).join(', ')}" placeholder="Cosa include? (separa con virgole)">
+          <div class="pr-foot"><span class="switch sm ${p.best ? 'on' : ''}" data-best></span>Più conveniente<span class="sp"></span>${g.plans.length > 1 ? `<button class="rm" data-del>${ui('trash', 15)}Rimuovi</button>` : ''}</div>
+        </div>`).join('');
+      $$('#plans .plan-row').forEach(r => {
+        const p = g.plans[+r.dataset.i];
+        $$('[data-f]', r).forEach(inp => inp.oninput = inp.onchange = () => {
+          const f = inp.dataset.f;
+          p[f] = f === 'price' ? (inp.value === '' ? '' : +inp.value) : f === 'perks' ? inp.value.split(',').map(x => x.trim()).filter(Boolean) : inp.value;
+          onChange();
+        });
+        $('[data-best]', r).onclick = () => { const was = p.best; g.plans.forEach(x => x.best = false); p.best = !was; renderPlans(); onChange(); };
+        if ($('[data-del]', r)) $('[data-del]', r).onclick = () => { g.plans.splice(+r.dataset.i, 1); renderPlans(); onChange(); };
+      });
+    }
+    $('#addPlan').onclick = () => { g.plans.push({ name: '', price: '', period: 'mese' }); renderPlans(); onChange(); };
+
+    /* ---------- 8 · foto ---------- */
+    function renderPhotos() {
+      $('#photos').innerHTML = g.photos.map((p, i) => `
+        <div class="ph"><img src="${photo(p, 300)}" alt=""><button class="x" data-rm="${i}" aria-label="Rimuovi">${ui('close', 14)}</button>
+        ${i === 0 ? '<span class="cv tag tag-volt">Copertina</span>' : `<button class="cv tag tag-soft" data-cv="${i}">Copertina</button>`}</div>`).join('')
+        + (g.photos.length < 10 ? `<button class="ph add" id="addPh"><span>${ui('upload', 22)}Aggiungi</span></button>` : '');
+      $$('[data-rm]').forEach(b => b.onclick = () => { g.photos.splice(+b.dataset.rm, 1); renderPhotos(); onChange(); });
+      $$('[data-cv]').forEach(b => b.onclick = () => { const [x] = g.photos.splice(+b.dataset.cv, 1); g.photos.unshift(x); renderPhotos(); onChange(); });
+      // upload finto: pesca una foto demo
+      if ($('#addPh')) $('#addPh').onclick = () => { const free = PHOTO_IDS.map((_, i) => i).filter(i => !g.photos.includes(i)); g.photos.push(free[Math.floor(Math.random() * free.length)]); renderPhotos(); onChange(); };
+    }
+
+    /* ---------- 9 · riepilogo ---------- */
+    const CHECKS = () => [
+      [1, 'Info', g.name ? `${g.name} · ${g.type}` : 'Manca il nome', !!g.name],
+      [2, 'Posizione', g.address || 'Manca l\'indirizzo', !!g.address],
+      [3, 'Contatti', [g.phone && 'Chiama', g.whatsapp && 'WhatsApp', g.site && 'Sito'].filter(Boolean).join(' · ') || 'Nessun contatto', !!(g.phone || g.whatsapp || g.site)],
+      [4, 'Orari e accesso', `${g.hours === '24h' ? 'Aperta 24/7' : 'Orari impostati'} · ${g.trial || 'nessuna prova'} · ${GENDER[g.gender || 'mista']}`, true],
+      [5, 'Attrezzi', g.equipment.length ? `${g.equipment.length} tipi${g.equipment.some(e => EQUIP[e[0]].range && !e[3]) ? ' · manca range manubri' : ''}` : 'Nessun attrezzo', g.equipment.length >= 3 && !g.equipment.some(e => EQUIP[e[0]].range && !e[3])],
+      [6, 'Servizi', g.amenities.map(a => AMENITIES[a]).join(', ') || 'Nessuno', g.amenities.length > 0],
+      [7, 'Prezzi', minMonthly() ? `da €${minMonthly()}/mese · ${g.plans.length} abbonamenti` : 'Nessun prezzo', !!minMonthly()],
+      [8, 'Foto', `${g.photos.length} foto`, g.photos.length >= 3],
+    ];
+    function renderSummary() {
+      $('#pvCard').innerHTML = `
+        <div class="gcard" style="width:100%;animation:none">
+          <div class="gcard-img">${g.photos.length ? `<img src="${photo(g.photos[0], 400)}" alt="">` : `<div style="height:100%;display:grid;place-items:center;color:var(--mute)">${ui('image', 26)}</div>`}${g.trial ? `<span class="tag tag-volt">${ui('ticket', 12)}Prova gratis</span>` : ''}</div>
+          <div class="gcard-body">
+            <div class="gcard-type mono"><span>${g.type}</span></div>
+            <h3 class="display">${g.name || 'Nome palestra'}</h3>
+            <div class="gcard-meta"><span class="tag tag-soft">Nuova</span><span class="muted">${g.area || 'zona'}</span></div>
+            <div class="gcard-foot"><div class="price">€${minMonthly() || '—'}<small> /mese</small></div><span class="go">${ui('arrowUR', 18)}</span></div>
+          </div>
+        </div>`;
+      $('#sum').innerHTML = CHECKS().map(([s, l, d, ok]) => `
+        <button class="sum-row ${ok ? 'ok' : 'warn'}" data-go="${s}"><span class="si">${ui(ok ? 'check' : 'minus', 14)}</span>
+        <span class="tt"><b>${l}</b><small>${d}</small></span><span class="ed">Modifica</span></button>`).join('');
+      $$('#sum [data-go]').forEach(b => b.onclick = () => go(+b.dataset.go));
+    }
+    $('#confirm').onclick = () => { $('#confirm').classList.toggle('on'); setFoot(); };
+
+    /* ---------- navigazione ---------- */
+    let dirty = false;
+    function onChange() { dirty = true; renderCPrev(); if (step === 9) renderSummary(); }
+
+    function setFoot() {
+      const edit = editStep !== null;
+      $('#foot').hidden = step === 0;
+      $('#prev').hidden = step <= 1 || edit;
+      $('#prev').innerHTML = ui('back', 20);
+      $('#prev').style.flex = '0 0 56px';
+      const nb = $('#next');
+      nb.className = 'btn ' + (step === 9 || edit ? 'btn-volt' : 'btn-ink');
+      if (edit) nb.innerHTML = `${ui('check', 18)} Salva modifiche`;
+      else if (step === 0) nb.innerHTML = `Salta, la aggiungo da zero ${ui('arrow', 18)}`;
+      else if (step === 9) nb.innerHTML = `${ui('check', 18)} Invia per verifica`;
+      else nb.innerHTML = `Avanti ${ui('arrow', 18)}`;
+      nb.style.opacity = step === 9 && !edit && !$('#confirm').classList.contains('on') ? .45 : 1;
+    }
+
+    function go(s) {
+      step = s;
+      $$('.wz-step').forEach(x => x.classList.toggle('on', +x.dataset.s === s));
+      $('#wzStep').textContent = s === 0 ? 'Registrazione palestra' : editStep !== null ? 'Modifica scheda' : `Passo ${s} di 9`;
+      $('#wzTitle').textContent = STEPS[s];
+      $('#wzBar').innerHTML = s === 0 ? '' : Array.from({ length: 9 }, (_, i) => `<i class="${i + 1 < s ? 'done' : i + 1 === s ? 'cur' : ''}"></i>`).join('');
+      $('#wzBar').hidden = editStep !== null;
+      $('#wzSave').hidden = s === 0;
+      $('#scroll').scrollTop = 0;
+      if (s === 2) setTimeout(initMap, 50);
+      if (s === 9) renderSummary();
+      setFoot();
+    }
+
+    function validateStep() {
+      if (step === 1 && !g.name.trim()) { toast('Inserisci il nome'); $('#f-name').focus(); return false; }
+      if (step === 2 && !g.address.trim()) { toast('Inserisci l\'indirizzo'); $('#f-addr').focus(); return false; }
+      return true;
+    }
+
+    $('#next').onclick = () => {
+      if (!validateStep()) return;
+      if (editStep !== null) { save(); if (g._status !== 'bozza') pushToAdmin(g, g._status); dirty = false; toast('Modifiche salvate'); setTimeout(() => location.href = 'gestione.html', 500); return; }
+      if (step === 9) {
+        if (!$('#confirm').classList.contains('on')) { toast('Conferma la dichiarazione'); return; }
+        const missing = CHECKS().filter(c => !c[3]);
+        if (missing.some(c => c[0] <= 2)) { toast('Completa info e posizione'); go(missing[0][0]); return; }
+        g._status = 'verifica'; save(); pushToAdmin(g, 'verifica'); dirty = false;
+        showDone(); return;
+      }
+      if (step > 0) save();
+      go(step + 1);
+    };
+    $('#prev').onclick = () => go(Math.max(0, step - 1));
+    $('#wzBack').innerHTML = ui('back', 20);
+    $('#wzBack').onclick = () => {
+      if (editStep !== null) { location.href = 'gestione.html'; return; }
+      if (step === 0) location.href = 'account.html'; else go(step - 1);
+    };
+    $('#wzSave').onclick = () => { save(); dirty = false; toast(editStep !== null ? 'Salvato' : 'Bozza salvata'); setTimeout(() => location.href = 'gestione.html', 500); };
+
+    function showDone() {
+      const d = document.createElement('div');
+      d.className = 'done-screen';
+      d.innerHTML = `
+        <div class="big-check">${ui('check', 48)}</div>
+        <h2 class="display">Inviata!</h2>
+        <p>${g.name} è in verifica. Di solito ci vogliono meno di 48 ore: ti avvisiamo via email e notifica.</p>
+        <div class="timeline">
+          <div class="tl ok"><i>${ui('check', 14)}</i><span><b>Scheda inviata</b><small>Adesso</small></span></div>
+          <div class="tl now"><i></i><span><b>Verifica dello staff Spotter</b><small>Controlliamo indirizzo e titolarità</small></span></div>
+          <div class="tl"><i></i><span><b>Online sulla mappa</b><small>Visibile a tutti gli utenti</small></span></div>
+        </div>
+        <a class="btn btn-ink btn-block" href="gestione.html" style="height:56px">Vai alla gestione ${ui('arrow', 18)}</a>`;
+      $('.screen').appendChild(d);
+    }
+
+    addEventListener('beforeunload', e => { if (dirty) save(); });
+
+    renderCPrev(); renderHours(); renderTrial(); renderGender(); renderEq(); renderAm(); renderPlans(); renderPhotos();
+    if (g.whatsapp && g.whatsapp === g.phone) { $('#sameWa').classList.add('on'); $('#f-wa').disabled = true; }
+    go(step);
+  </script>
+</body>
+</html>
